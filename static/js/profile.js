@@ -11,13 +11,53 @@ document.addEventListener("DOMContentLoaded", () => {
     const profName = document.getElementById("profName");
     const profEmail = document.getElementById("profEmail");
     const profPhone = document.getElementById("profPhone");
+    const profDob = document.getElementById("profDob");
+    const profAddress = document.getElementById("profAddress");
+    const profBio = document.getElementById("profBio");
     const profPicUrl = document.getElementById("profPicUrl");
+    
     const profileAvatar = document.getElementById("profileAvatar");
     const roleBadge = document.getElementById("roleBadge");
+    const idLabel = document.getElementById("idLabel");
+    const profEnrollment = document.getElementById("profEnrollment");
+    const profDepartment = document.getElementById("profDepartment");
+    const profJoined = document.getElementById("profJoined");
+    
+    const profileBar = document.getElementById("profileBar");
+    const profilePercent = document.getElementById("profilePercent");
+    
     const btnSaveProfile = document.getElementById("btnSaveProfile");
     const btnBackToDashboard = document.getElementById("btnBackToDashboard");
 
-    // 1. Auth & Data Fetch
+    // Array of fields to calculate profile completion
+    const completionFields = [profName, profEmail, profPhone, profDob, profAddress, profBio, profPicUrl];
+
+    function updateCompletion() {
+        const total = completionFields.length;
+        let filled = 0;
+        completionFields.forEach(field => {
+            if (field.value && field.value.trim() !== "") filled++;
+        });
+        const percent = Math.round((filled / total) * 100);
+        profileBar.style.width = percent + "%";
+        profilePercent.textContent = percent + "%";
+        
+        // Color changes based on completion
+        if (percent === 100) {
+            profileBar.className = "bg-gradient-to-r from-emerald-400 to-emerald-600 h-2.5 rounded-full transition-all duration-500 shadow-sm";
+            profilePercent.className = "font-black text-emerald-600";
+        } else {
+            profileBar.className = "bg-gradient-to-r from-brand to-indigo-400 h-2.5 rounded-full transition-all duration-500 shadow-sm";
+            profilePercent.className = "font-black text-brand";
+        }
+    }
+
+    // Attach listener to all inputs for real-time progress bar update
+    completionFields.forEach(field => {
+        field.addEventListener("input", updateCompletion);
+    });
+
+    // 1. Auth & Data Fetch from Firebase
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUserId = user.uid;
@@ -27,31 +67,53 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if(userDoc.exists()) {
                     const data = userDoc.data();
-                    currentUserRole = data.role;
+                    currentUserRole = data.role || 'student';
 
-                    // Populate Data
+                    // Populate Base Fields
                     profName.value = data.name || "No Name Set";
                     profEmail.value = data.email || user.email;
-                    roleBadge.innerText = currentUserRole;
-
-                    // Set editable fields if they exist
                     if(data.phone) profPhone.value = data.phone;
+                    if(data.dob) profDob.value = data.dob;
+                    if(data.address) profAddress.value = data.address;
+                    if(data.bio) profBio.value = data.bio;
+                    
+                    // Avatar logic
                     if(data.profilePic) {
                         profPicUrl.value = data.profilePic;
                         profileAvatar.src = data.profilePic;
                     } else {
-                        // Fallback avatar based on name
-                        profileAvatar.src = `https://ui-avatars.com/api/?name=${data.name}&background=eff6ff&color=1d4ed8`;
+                        profileAvatar.src = `https://ui-avatars.com/api/?name=${data.name || 'User'}&background=eff6ff&color=4f46e5`;
                     }
 
-                    // Dynamically set background color of badge based on role
-                    if(currentUserRole === 'admin') roleBadge.className = "bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-purple-200";
-                    if(currentUserRole === 'teacher') roleBadge.className = "bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-orange-200";
+                    // Dynamic Role UI changes
+                    roleBadge.innerText = currentUserRole;
+                    profJoined.innerText = data.joinedDate || new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                    if (currentUserRole === 'admin') {
+                        roleBadge.className = "bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-purple-200";
+                        idLabel.innerText = "Admin ID";
+                        profEnrollment.innerText = data.adminId || "ADM-001";
+                        profDepartment.innerText = "Management";
+                    } 
+                    else if (currentUserRole === 'teacher') {
+                        roleBadge.className = "bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-orange-200";
+                        idLabel.innerText = "Employee ID";
+                        profEnrollment.innerText = data.empId || "EMP-" + Math.floor(1000 + Math.random() * 9000);
+                        profDepartment.innerText = data.department || "Computer Science";
+                    } 
+                    else {
+                        roleBadge.className = "bg-indigo-100 text-brand px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-200";
+                        idLabel.innerText = "Enrollment No";
+                        profEnrollment.innerText = data.enrollment || "STU-" + Math.floor(10000 + Math.random() * 90000);
+                        profDepartment.innerText = data.section || "BCA Final Year";
+                    }
+
+                    // Run completion check after data loads
+                    updateCompletion();
 
                 }
             } catch (error) {
                 console.error("Error fetching profile: ", error);
-                alert("Failed to load profile data.");
             }
         } else {
             window.location.href = "/login";
@@ -64,15 +126,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if(newUrl) {
             profileAvatar.src = newUrl;
         } else {
-            profileAvatar.src = `https://ui-avatars.com/api/?name=${profName.value}&background=eff6ff&color=1d4ed8`;
+            profileAvatar.src = `https://ui-avatars.com/api/?name=${profName.value}&background=eff6ff&color=4f46e5`;
         }
     });
 
-    // 3. Save Profile Updates
+    // 3. Save Profile Updates to Firebase
     btnSaveProfile.addEventListener("click", async () => {
-        const newPhone = profPhone.value.trim();
-        const newPicUrl = profPicUrl.value.trim();
-
         // Basic UI loading state
         const originalText = btnSaveProfile.innerHTML;
         btnSaveProfile.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
@@ -82,33 +141,37 @@ document.addEventListener("DOMContentLoaded", () => {
             const userRef = doc(db, "users", currentUserId);
             
             await updateDoc(userRef, {
-                phone: newPhone,
-                profilePic: newPicUrl
+                phone: profPhone.value.trim(),
+                dob: profDob.value,
+                address: profAddress.value.trim(),
+                bio: profBio.value.trim(),
+                profilePic: profPicUrl.value.trim()
             });
 
-            alert("Profile updated successfully!");
+            // Green success effect on button
+            btnSaveProfile.className = "bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_4px_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-sm md:text-base w-full md:w-auto";
+            btnSaveProfile.innerHTML = `<i class="fa-solid fa-check"></i> Saved Successfully`;
+            
+            setTimeout(() => {
+                btnSaveProfile.className = "bg-brand text-white px-8 py-3 rounded-xl font-bold shadow-[0_4px_15px_rgba(79,70,229,0.4)] hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm md:text-base w-full md:w-auto";
+                btnSaveProfile.innerHTML = originalText;
+                btnSaveProfile.disabled = false;
+            }, 2000);
+
         } catch (error) {
             console.error(error);
-            alert("Error updating profile.");
-        } finally {
-            // Restore button
+            alert("Error updating profile. Please try again.");
             btnSaveProfile.innerHTML = originalText;
             btnSaveProfile.disabled = false;
-        }
+        } 
     });
 
     // 4. Back to Dashboard Router
     btnBackToDashboard.addEventListener("click", () => {
-        if (!currentUserRole) return;
+        if (!currentUserRole) return window.location.href = "/";
         
-        if (currentUserRole === 'admin') {
-            window.location.href = "/admin-dashboard"; // Ensure these match your Flask routes
-        } else if (currentUserRole === 'teacher') {
-            window.location.href = "/teacher-dashboard";
-        } else if (currentUserRole === 'student') {
-            window.location.href = "/student-dashboard";
-        } else {
-            window.location.href = "/dashboard";
-        }
+        if (currentUserRole === 'admin') window.location.href = "/admin-dashboard";
+        else if (currentUserRole === 'teacher') window.location.href = "/teacher-dashboard";
+        else window.location.href = "/student-dashboard";
     });
 });
