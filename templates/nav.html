@@ -1,6 +1,8 @@
 <nav class="navbar navbar-expand-lg custom-navbar navbar-dark-mode">
-    <div class="container-fluid px-lg-5 px-3"> <div class="nav-left">
-            <a class="navbar-brand logo" href="#">
+    <div class="container-fluid px-lg-5 px-3"> 
+
+        <div class="nav-left">
+            <a class="navbar-brand logo" href="/">
                 <img src="https://cdn-icons-png.flaticon.com/128/8030/8030198.png" class="logo-img">
                 <span class="logo-text">ACET Nexus</span>
             </a>
@@ -9,17 +11,17 @@
         <div class="nav-center" id="mobileMenu">
             <ul class="navbar-nav nav-links">
                 {% if show_links %}
-                <li class="nav-item"><a href="#home" class="nav-link active">Home</a></li>
-                <li class="nav-item"><a href="#features" class="nav-link">Features</a></li>
-                <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
-                <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
+                <li class="nav-item"><a href="#home" class="nav-link active mobile-close-link">Home</a></li>
+                <li class="nav-item"><a href="#features" class="nav-link mobile-close-link">Features</a></li>
+                <li class="nav-item"><a href="#about" class="nav-link mobile-close-link">About</a></li>
+                <li class="nav-item"><a href="#contact" class="nav-link mobile-close-link">Contact</a></li>
                 {% endif %}
             </ul>
         </div>
 
-        <div class="nav-right" style="display: flex; align-items: center; gap: 15px;">
+        <div class="nav-right" id="navRightContainer" style="display: flex; align-items: center; gap: 15px;">
             {% if show_login %}
-            <a href="{{url_for('login')}}" class="login-btn">Login</a>
+            <a href="/login?redirect=home" class="login-btn" id="mainLoginBtn">Login</a>
             {% endif %}
             
             {% if show_links %}
@@ -33,8 +35,21 @@
 </nav>
 
 <script>
-    document.getElementById('hamburgerBtn').addEventListener('click', function() {
-        var menu = document.getElementById('mobileMenu');
-        menu.classList.toggle('active');
+    // 🔥 Hamburger kholne ka logic
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if(hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('active');
+        });
+    }
+
+    // 🔥 Kisi bhi link par click karne se menu automatically band hoga
+    document.querySelectorAll('.mobile-close-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if(mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+            }
+        });
     });
 </script>

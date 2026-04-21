@@ -344,10 +344,17 @@ if (forgotPasswordBtn) {
 }
 
 function redirectUser(role) {
-    if (role === "admin") window.location.href = "/admin-dashboard";
-    else if (role === "student") window.location.href = "/student-dashboard";
-    else if (role === "teacher") window.location.href = "/teacher-dashboard";
-    else window.location.href = "/dashboard";
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTo = urlParams.get('redirect');
+
+    if (redirectTo === 'home') {
+        window.location.href = "/";
+    } else {
+        if (role === "admin") window.location.href = "/admin-dashboard";
+        else if (role === "student") window.location.href = "/student-dashboard";
+        else if (role === "teacher") window.location.href = "/teacher-dashboard";
+        else window.location.href = "/dashboard";
+    }
 }
 
 });
