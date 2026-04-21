@@ -1,11 +1,11 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, query, where, getDocs, addDoc, doc, getDoc, serverTimestamp, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     
     let currentStudentId = null;
-    let studentSection = null;
+    let currentStudentSection = null;
     let activeSessionId = null;
     let currentAssignmentIdToSubmit = null;
     let attendanceChartInstance = null;
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. PREMIUM TAB SWITCHING LOGIC =================
+    // ================= 0. PREMIUM TAB SWITCHING LOGIC (FIXED) =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
 
@@ -25,11 +25,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
-            views.forEach(v => v.classList.remove("active"));
+            views.forEach(v => {
+                v.classList.remove("active");
+                v.style.display = "none"; // Explicit hide
+            });
 
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
-            document.getElementById(btn.getAttribute("data-target")).classList.add("active");
+            
+            const targetId = btn.getAttribute("data-target");
+            const targetView = document.getElementById(targetId);
+            if(targetView) {
+                targetView.classList.add("active");
+                targetView.style.display = "block"; // Explicit show
+            }
+            
+            // Auto close mobile menu if open
+            const aside = document.querySelector("aside");
+            if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                aside.classList.remove("menu-open");
+                document.body.style.overflow = "auto";
+                if(history.state && history.state.menuOpen) {
+                    history.replaceState({ tab: targetId }, ""); 
+                }
+            } else {
+                history.pushState({ tab: targetId }, "");
+            }
         });
     });
 
@@ -80,14 +101,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const fullName = data.name || "Student";
             
             document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
-            studentSection = data.section || "Unassigned";
+            studentSection = data.section ? data.section.toUpperCase() : "Unassigned";
             document.getElementById("studentSectionBadge").innerText = `SEC: ${studentSection}`;
             
             if(document.getElementById("currentDateDisplay")) {
                 document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
             }
 
-            // ================= DYNAMIC AVATAR INITIALS =================
             const nameParts = fullName.trim().split(/\s+/);
             let initials = "U";
             if (nameParts.length === 1) {
@@ -100,23 +120,26 @@ document.addEventListener("DOMContentLoaded", () => {
             if(avatarEl) avatarEl.innerText = initials;
             
             listenForLiveSession();
-            loadMyHistoryAndGraph(); 
-            loadMyAssignments();
-            loadMyRemarks();
-            loadMySubjects(); 
+            await loadMyHistoryAndGraph(); 
+            await loadMyAssignments();
+            await loadMyRemarks();
+            await loadMySubjects(); 
+            setupEditableTarget();
         }
     }
 
     // ================= 2. LOAD SUBJECTS =================
     async function loadMySubjects() {
+        const container = document.getElementById("mySubjectsContainer");
+        if(!container) return;
+
         if (studentSection === "Unassigned") {
-            document.getElementById("mySubjectsContainer").innerHTML = "<p class='text-slate-500 text-sm'>You are not assigned to a section yet.</p>";
+            container.innerHTML = "<p class='text-slate-500 text-sm'>You are not assigned to a section yet. Update your profile.</p>";
             return;
         }
 
         const q = query(collection(db, "teacher_assignments"), where("sectionId", "==", studentSection));
         const snapshot = await getDocs(q);
-        const container = document.getElementById("mySubjectsContainer");
         container.innerHTML = "";
 
         if(snapshot.empty) {
@@ -150,6 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         onSnapshot(sessionQuery, (snapshot) => {
             const banner = document.getElementById("liveSessionBanner");
+            if(!banner) return;
+
             if (!snapshot.empty) {
                 const sessionData = snapshot.docs[0].data();
                 activeSessionId = snapshot.docs[0].id;
@@ -179,14 +204,14 @@ document.addEventListener("DOMContentLoaded", () => {
             btnMarkPresent.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Marking...`;
 
             try {
-                const checkQ = query(collection(db, "attendance_records"), where("sessionId", "==", activeSessionId), where("studentId", "==", currentStudentId));
+                const checkQ = query(collection(db, "attendance_marks"), where("sessionId", "==", activeSessionId), where("studentId", "==", currentStudentId));
                 if(!(await getDocs(checkQ)).empty) {
                     alert("You have already marked your attendance!");
                     btnMarkPresent.innerHTML = `Done`;
                     return;
                 }
 
-                await addDoc(collection(db, "attendance_records"), {
+                await addDoc(collection(db, "attendance_marks"), {
                     sessionId: activeSessionId, studentId: currentStudentId, sectionId: studentSection, timestamp: serverTimestamp(), status: "Present"
                 });
 
@@ -202,44 +227,58 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 5. HISTORY & GRAPHS =================
+    // ================= 5. HISTORY, GRAPHS & LOGS =================
     async function loadMyHistoryAndGraph() {
         if(studentSection === "Unassigned") return;
-        const totalSessionsSnap = await getDocs(query(collection(db, "attendance_sessions"), where("sectionId", "==", studentSection)));
-        const totalClassesHeld = totalSessionsSnap.size;
-        
-        if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = totalClassesHeld;
 
-        const myAttendanceSnap = await getDocs(query(collection(db, "attendance_records"), where("studentId", "==", currentStudentId)));
-        const classesAttended = myAttendanceSnap.size;
+        try {
+            // Calculate Totals
+            const totalSessionsSnap = await getDocs(query(collection(db, "attendance_sessions"), where("sectionId", "==", studentSection)));
+            const totalClassesHeld = totalSessionsSnap.size;
+            
+            if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = totalClassesHeld;
 
-        const container = document.getElementById("myHistoryContainer");
-        container.innerHTML = "";
+            const myAttendanceSnap = await getDocs(query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc")));
+            const classesAttended = myAttendanceSnap.size;
 
-        if(myAttendanceSnap.empty) {
-            container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
-        } else {
-            myAttendanceSnap.forEach(doc => {
-                container.innerHTML += `
-                    <div class="flex justify-between items-center p-3 border border-slate-100 bg-slate-50 rounded-xl mb-2 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-brand/10 text-brand w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-check text-xs"></i></div>
-                            <p class="font-bold text-slate-800 text-sm">Session ID: ${doc.id.substring(0, 6)}...</p>
-                        </div>
-                        <span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-md text-[10px] uppercase">Present</span>
-                    </div>
-                `;
-            });
-        }
+            // Load Recent Logs
+            const container = document.getElementById("recentActivityContainer") || document.getElementById("myHistoryContainer");
+            if(container) {
+                container.innerHTML = "";
+                if(myAttendanceSnap.empty) {
+                    container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
+                } else {
+                    myAttendanceSnap.forEach(doc => {
+                        const data = doc.data();
+                        const dateObj = data.timestamp ? new Date(data.timestamp.toDate()) : new Date();
+                        const dateStr = dateObj.toLocaleString();
+                        container.innerHTML += `
+                            <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
+                                    <div>
+                                        <p class="font-bold text-slate-800">${data.subject || 'Lecture'}</p>
+                                        <p class="text-xs text-slate-500">${dateStr}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">PRESENT</span>
+                            </div>
+                        `;
+                    });
+                }
+            }
 
-        let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
-        let missedClasses = totalClassesHeld > 0 ? totalClassesHeld - classesAttended : 0;
+            // Calculate Percentage
+            let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
+            let missedClasses = totalClassesHeld > 0 ? totalClassesHeld - classesAttended : 0;
 
-        if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
-        if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
-        
-        drawChart(classesAttended, missedClasses);
-        drawDummyLineChart(); 
+            if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
+            if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
+            
+            drawChart(classesAttended, missedClasses);
+            drawDummyLineChart(); 
+
+        } catch (e) { console.error("Error loading history: ", e); }
     }
 
     function drawChart(attended, missed) {
@@ -279,11 +318,35 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function setupEditableTarget() {
+        const targetText = document.getElementById("targetText"); 
+        if(!targetText) return;
+        const savedTarget = localStorage.getItem(`target_${currentStudentId}`) || 75;
+        targetText.innerText = savedTarget + "%";
+
+        targetText.parentElement.style.cursor = "pointer";
+        targetText.parentElement.title = "Click to Edit Target";
+        
+        targetText.parentElement.addEventListener("click", () => {
+            let newTarget = prompt("Set your target attendance percentage (0-100):", savedTarget);
+            if(newTarget !== null && !isNaN(newTarget) && newTarget >= 0 && newTarget <= 100) {
+                localStorage.setItem(`target_${currentStudentId}`, newTarget);
+                targetText.innerText = newTarget + "%";
+            }
+        });
+    }
+
     // ================= 6. LOAD ASSIGNMENTS =================
     async function loadMyAssignments() {
-        if(studentSection === "Unassigned") return;
-        const snapshot = await getDocs(query(collection(db, "assignments"), where("sectionId", "==", studentSection)));
         const container = document.getElementById("myAssignmentsContainer");
+        if(!container) return;
+
+        if(studentSection === "Unassigned") {
+            container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
+            return;
+        }
+
+        const snapshot = await getDocs(query(collection(db, "assignments"), where("sectionId", "==", studentSection)));
         container.innerHTML = "";
         
         let activeAssignmentsCount = 0;
@@ -361,8 +424,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ================= 7. FETCH REMARKS =================
     async function loadMyRemarks() {
-        const snapshot = await getDocs(query(collection(db, "remarks"), where("studentId", "==", currentStudentId)));
         const container = document.getElementById("myRemarksContainer");
+        if(!container) return;
+
+        const snapshot = await getDocs(query(collection(db, "remarks"), where("studentId", "==", currentStudentId)));
         container.innerHTML = "";
 
         if(snapshot.empty) {
@@ -385,105 +450,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ================= 8. LOGOUT =================
-    document.getElementById("btnLogout").addEventListener("click", () => {
-        if(isViewOnly) window.close(); 
-        else signOut(auth).then(() => window.location.href = "/login");
-    });
-});
-
-import { auth, db } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-    let currentStudentId = null;
-    let currentStudentSection = null;
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentStudentId = user.uid;
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().role === "student") {
-                currentStudentSection = userDoc.data().section;
-                
-                // Fetch & Calculate Everything
-                calculateAttendance();
-                fetchRecentLogs();
-                setupEditableTarget();
-            }
-        }
-    });
-
-    async function calculateAttendance() {
-        if(!currentStudentSection) return;
-
-        // 1. Total Lectures Conducted for this Section
-        const sessionsQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection));
-        const sessionsSnap = await getDocs(sessionsQ);
-        const totalLectures = sessionsSnap.size;
-
-        // 2. Total Attended by this Student
-        const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId));
-        const marksSnap = await getDocs(marksQ);
-        const totalAttended = marksSnap.size;
-
-        // Update UI
-        document.getElementById("statTotalClasses").innerText = totalLectures; // HTML id adjust kar lena
-        
-        let percentage = 0;
-        if(totalLectures > 0) {
-            percentage = Math.round((totalAttended / totalLectures) * 100);
-        }
-        document.getElementById("statOverallAtt").innerText = percentage + "%";
-    }
-
-    async function fetchRecentLogs() {
-        const logsContainer = document.getElementById("recentActivityContainer"); // Add this ID to your HTML log div
-        const q = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q);
-
-        if(snapshot.empty) {
-            logsContainer.innerHTML = "<p class='text-slate-400'>No attendance logs found.</p>";
-            return;
-        }
-
-        logsContainer.innerHTML = "";
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const date = new Date(data.timestamp.toDate()).toLocaleString();
-            logsContainer.innerHTML += `
-                <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
-                        <div>
-                            <p class="font-bold text-slate-800">${data.subject}</p>
-                            <p class="text-xs text-slate-500">${date}</p>
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">PRESENT</span>
-                </div>
-            `;
-        });
-    }
-
-    // Editable Target System
-    function setupEditableTarget() {
-        const targetText = document.getElementById("targetText"); // The 75% text inside pie chart
-        const savedTarget = localStorage.getItem(`target_${currentStudentId}`) || 75;
-        targetText.innerText = savedTarget + "%";
-
-        targetText.parentElement.style.cursor = "pointer";
-        targetText.parentElement.title = "Click to Edit Target";
-        
-        targetText.parentElement.addEventListener("click", () => {
-            let newTarget = prompt("Set your target attendance percentage (0-100):", savedTarget);
-            if(newTarget !== null && !isNaN(newTarget) && newTarget >= 0 && newTarget <= 100) {
-                localStorage.setItem(`target_${currentStudentId}`, newTarget);
-                targetText.innerText = newTarget + "%";
-                // Optionally update UI circle stroke here
-            } else if (newTarget !== null) {
-                alert("Please enter a valid number between 0 and 100.");
-            }
+    const btnLogout = document.getElementById("btnLogout");
+    if(btnLogout) {
+        btnLogout.addEventListener("click", () => {
+            if(isViewOnly) window.close(); 
+            else signOut(auth).then(() => window.location.href = "/login");
         });
     }
 });

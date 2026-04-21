@@ -1,20 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Custom Scrollbar for Admin */
-/* ================= HIDE SCROLLBAR BUT KEEP SCROLLING ================= */
-/* Chrome, Safari, Edge, Opera ke liye */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
+/* ================= GLOBAL CUSTOM SCROLLBAR ================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Firefox, IE ke liye */
-.no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
+/* Hide scrollbar completely but allow scrolling */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.tab-content { display: none; min-height: 0 !important; }
-.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+/* ================= TAB SWITCHING & ANIMATIONS ================= */
+.tab-content { 
+    display: none; 
+    min-height: 0 !important; 
+}
+.tab-content.active { 
+    display: block; 
+    animation: fadeIn 0.3s ease-in-out; 
+}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
@@ -26,15 +30,19 @@
     opacity: 0;
     transform: translateY(20px);
 }
-
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
 
 @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-.modal-backdrop { backdrop-filter: blur(8px); background-color: rgba(15, 23, 42, 0.6); }
+/* ================= GLASSMORPHISM & MODALS ================= */
+.modal-backdrop {
+    backdrop-filter: blur(8px);
+    background-color: rgba(15, 23, 42, 0.6);
+}
 
-/* ================= MOBILE DASHBOARD (APPLE STYLE & GRID FIX) ================= */
+/* ================= MOBILE DASHBOARD FIXES ================= */
 @media (max-width: 992px) {
     /* 1. Sidebar becomes Full-Screen Blur Overlay */
     aside {
@@ -50,7 +58,7 @@
         align-items: center;
         opacity: 0;
         visibility: hidden;
-        transform: scale(1.1); /* Apple slight zoom out effect */
+        transform: scale(1.1); 
         transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     
@@ -60,10 +68,10 @@
         transform: scale(1);
     }
 
-    /* 2. Menu Links Styling (Apple Look) */
+    /* 2. Menu Links Styling */
     aside nav { width: 100% !important; gap: 5px !important; margin-top: 0 !important; }
     aside .nav-btn, aside #btnOpenAllocate {
-        font-size: 1.8rem !important; /* Big elegant font */
+        font-size: 1.8rem !important; 
         justify-content: center !important;
         background: transparent !important;
         box-shadow: none !important;
@@ -72,15 +80,41 @@
         letter-spacing: 1px;
         padding: 10px !important;
     }
-    aside .nav-btn i, aside #btnOpenAllocate i { display: none !important; } /* Hide icons */
+    aside .nav-btn i, aside #btnOpenAllocate i { display: none !important; } 
     
     aside > div:first-child { border: none !important; margin-bottom: 20px; text-align: center;}
-    aside .w-full.h-px { display: none !important; } /* Hide dividers */
+    aside .w-full.h-px { display: none !important; } 
     
+    /* 🔥 MAKE PROFILE CIRCLE & ROLE POP OUT 🔥 */
+    aside #userAvatarInitials {
+        width: 80px !important; 
+        height: 80px !important;
+        font-size: 32px !important;
+        border: 3px solid #ffffff !important; 
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.15) !important; 
+    }
+    
+    aside p.text-\[10px\], aside p.text-\[11px\] {
+        color: #ffffff !important; 
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        font-size: 11px !important;
+        padding: 6px 14px !important;
+        margin-top: 5px !important;
+    }
+
+    /* 🔥 LOGOUT BUTTON SPACING FIX 🔥 */
+    aside .px-5.pb-8.mt-auto {
+        margin-top: 30px !important;
+        padding-bottom: 40px !important; 
+        width: 100% !important;
+        display: flex;
+        justify-content: center;
+    }
     aside #btnLogout {
         justify-content: center !important;
+        color: #ff4d4d !important; 
         font-size: 1.4rem !important;
-        margin-top: 10px;
     }
 
     /* 3. Fix Dashboard Main Area Overlap */
@@ -91,7 +125,7 @@
     .grid { grid-template-columns: 1fr !important; gap: 15px !important; }
     .col-span-2 { grid-column: span 1 / span 1 !important; }
     
-    /* 5. Fix internal headers (Search, New Task buttons etc.) */
+    /* 5. Fix internal headers */
     header.h-20 {
         height: auto !important;
         flex-direction: column !important;
@@ -105,36 +139,4 @@
     
     /* Modals resize */
     .modal-backdrop > div { width: 95% !important; padding: 20px !important; }
-    /* 🔥 MAKE PROFILE CIRCLE & ROLE POP OUT 🔥 */
-    aside #userAvatarInitials {
-        width: 80px !important; /* Circle bada kiya */
-        height: 80px !important;
-        font-size: 32px !important;
-        border: 3px solid #ffffff !important; /* White border for contrast */
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.15) !important; /* Subtle white glow */
-    }
-    
-    /* Role Badge (System Admin / Student) Visibility Fix */
-    aside p.text-\[10px\], aside p.text-\[11px\] {
-        color: #ffffff !important; /* White text */
-        border-color: rgba(255, 255, 255, 0.4) !important;
-        background: rgba(255, 255, 255, 0.1) !important;
-        font-size: 11px !important;
-        padding: 6px 14px !important;
-        margin-top: 5px !important;
-    }
-
-    /* 🔥 LOGOUT BUTTON SPACING FIX 🔥 */
-    aside .px-5.pb-8.mt-auto {
-        margin-top: 30px !important;
-        padding-bottom: 40px !important; /* Bottom se upar uthaya */
-        width: 100% !important;
-        display: flex;
-        justify-content: center;
-    }
-    aside #btnLogout {
-        color: #ff4d4d !important; /* Brighter red */
-        font-size: 1.2rem !important;
-    }
 }
-

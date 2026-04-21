@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -112,7 +112,7 @@
 
                 <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-300">
                     <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Activity</h2>
-                    <div id="myHistoryContainer" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
+                    <div id="recentActivityContainer" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
                 </div>
             </section>
 
@@ -141,8 +141,6 @@
 </section>
 
 <script type="module">
-    import { db } from "./static/js/firebase.js";
-
     document.addEventListener("DOMContentLoaded", () => {
         const navbar = document.querySelector(".custom-navbar");
         if (navbar) {
@@ -154,7 +152,6 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 PRO MOBILE MENU LOGIC
         const aside = document.querySelector("aside");
         
         if (window.innerWidth <= 992 && aside) {
@@ -212,20 +209,8 @@
             }
         }
 
-        // 🔥 AUTO-CLOSE MENU ON TAB CLICK
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                    if(history.state && history.state.menuOpen) {
-                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); 
-                    }
-                }
-            });
-        });
-
-       // 🔥 BROWSER BACK BUTTON PRO-LOGIC
+        // 🔥 Tab Switching handled dynamically by student_dashboard.js now
+        
         history.replaceState({ tab: 'view-dashboard' }, ""); 
 
         window.addEventListener("popstate", (e) => {
@@ -241,7 +226,6 @@
                 document.getElementById('view-dashboard').classList.add('active');
                 history.pushState({ tab: 'view-dashboard' }, ""); 
             } else {
-                // 🔥 Default tab se back kiya to seedha Home bhej diya! (No Logout Prompt)
                 window.location.href = "/";
             }
         });
