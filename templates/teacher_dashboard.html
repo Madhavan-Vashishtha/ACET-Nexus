@@ -188,12 +188,24 @@
                 
                 // Clone Profile Icon for Top Right
                 const profileClone = originalProfile.cloneNode(true);
-                profileClone.style.width = "35px";
-                profileClone.style.height = "35px";
-                profileClone.style.fontSize = "16px";
+                profileClone.removeAttribute('id'); // Avoid duplicate IDs
+                profileClone.style.width = "40px"; // Navbar me thoda bada
+                profileClone.style.height = "40px";
+                profileClone.style.fontSize = "18px";
                 profileClone.style.marginBottom = "0";
-                profileClone.style.boxShadow = "none";
+                profileClone.style.border = "2px solid rgba(255,255,255,0.8)"; // Contrast in navbar
+                profileClone.style.cursor = "pointer";
+                
+                // Click to go to profile (Top Navbar icon)
+                profileClone.addEventListener("click", () => {
+                    window.location.href = '/profile';
+                });
                 navRight.appendChild(profileClone);
+                
+                // Click to go to profile (Main menu icon)
+                originalProfile.parentElement.addEventListener("click", () => {
+                    window.location.href = '/profile';
+                });
                 
                 // Create Hamburger Button
                 const burgerBtn = document.createElement("button");

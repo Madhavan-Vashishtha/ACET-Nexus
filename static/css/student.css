@@ -155,4 +155,35 @@
     
     /* Modals resize */
     .modal-backdrop > div { width: 95% !important; padding: 20px !important; }
+    /* 🔥 MAKE PROFILE CIRCLE & ROLE POP OUT 🔥 */
+    aside #userAvatarInitials {
+        width: 80px !important; /* Circle bada kiya */
+        height: 80px !important;
+        font-size: 32px !important;
+        border: 3px solid #ffffff !important; /* White border for contrast */
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.15) !important; /* Subtle white glow */
+    }
+    
+    /* Role Badge (System Admin / Student) Visibility Fix */
+    aside p.text-\[10px\], aside p.text-\[11px\] {
+        color: #ffffff !important; /* White text */
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        font-size: 11px !important;
+        padding: 6px 14px !important;
+        margin-top: 5px !important;
+    }
+
+    /* 🔥 LOGOUT BUTTON SPACING FIX 🔥 */
+    aside .px-5.pb-8.mt-auto {
+        margin-top: 30px !important;
+        padding-bottom: 40px !important; /* Bottom se upar uthaya */
+        width: 100% !important;
+        display: flex;
+        justify-content: center;
+    }
+    aside #btnLogout {
+        color: #ff4d4d !important; /* Brighter red */
+        font-size: 1.2rem !important;
+    }
 }
