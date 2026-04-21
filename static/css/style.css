@@ -252,28 +252,28 @@ html, body, * {
         scroll-snap-type: y mandatory;
     }
     section {
-        min-height: 100vh; /* height:100vh nahi, taaki lamba content na kate */
+        min-height: 100vh;
         height: auto;
-        padding-top: 90px; /* Navbar ke neeche dabne se rokega */
+        padding-top: 90px;
     }
     
-    /* Navbar Layout Fix (Ek line mein force karna) */
+    /* Navbar Layout Fix */
     .custom-navbar .container-fluid {
         display: flex !important;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: nowrap; /* Tute nahi isliye */
+        flex-wrap: nowrap;
     }
     
     .nav-left { flex: 1; }
-    .logo-text { font-size: 22px; } /* Logo thoda chota kiya space ke liye */
+    .logo-text { font-size: 22px; }
     
-    /* Login & Hamburger ko ek saath fix kiya */
+    /* Login & Hamburger Fix */
     .nav-right {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
+        gap: 15px; /* Thoda gap badhaya button aur menu ke beech */
     }
     
     .login-btn {
@@ -285,19 +285,45 @@ html, body, * {
         display: block !important;
     }
 
-    /* Mobile Menu Dropdown */
+    /* 🔥 PREMIUM MOBILE MENU DROPDOWN 🔥 */
     .nav-center {
         display: none;
         position: absolute;
-        top: 75px;
-        left: 0;
-        width: 100%;
-        background: rgba(15, 23, 42, 0.98);
-        backdrop-filter: blur(10px);
-        padding: 20px 0;
-        text-align: center;
+        top: 80px; /* Navbar ke theek neeche */
+        right: 20px; /* Right side margin */
+        left: auto; /* Full width hataya */
+        width: 220px; /* Fixed neat width */
+        background: rgba(15, 23, 42, 0.92); /* Dark glass */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 25px;
+        text-align: left; /* Left align kiya professional look ke liye */
+        border-radius: 16px; /* Round Edges */
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); /* 3D Floating Shadow */
+        border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle premium border */
+        animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy open effect */
     }
     
-    .nav-center.active { display: block; }
-    .nav-links { flex-direction: column; gap: 20px; }
+    .nav-center.active { 
+        display: block; 
+    }
+    
+    .nav-links { 
+        flex-direction: column; 
+        gap: 22px; 
+        padding-left: 15px; /* 🔥 Red dot ke liye exact space banayi */
+        align-items: flex-start; /* Text left align */
+    }
+
+    /* Mobile par underline properly text ke neeche aaye uske liye inline-block */
+    .navbar .nav-link {
+        display: inline-block;
+        width: fit-content;
+    }
+}
+
+/* Dropdown Animation Keyframes */
+@keyframes popDown {
+    0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
