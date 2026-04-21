@@ -12,3 +12,5 @@ static/js/config.js
 
 # Mac OS files (Agar mac use kar raha hai to)
 .DS_Store
+
+serviceAccountKey.json

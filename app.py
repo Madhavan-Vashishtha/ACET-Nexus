@@ -8,10 +8,22 @@ import smtplib
 import random
 from email.message import EmailMessage
 
+import firebase_admin
+from firebase_admin import credentials, auth as admin_auth
+
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+cert_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if cert_path and not firebase_admin._apps:
+    try:
+        cred = credentials.Certificate(cert_path)
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin Initialized Successfully!")
+    except Exception as e:
+        print(f"Error initializing Firebase Admin: {e}")
 
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
@@ -99,6 +111,25 @@ def verify_otp():
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': 'Invalid OTP or Email mismatch.'}), 400
+    
+# ==========================================
+# 🗑️ ADMIN API: DELETE USER COMPLETELY
+# ==========================================
+@app.route('/delete-user', methods=['POST'])
+def delete_user():
+    data = request.json
+    uid = data.get('uid')
+    
+    if not uid:
+        return jsonify({'success': False, 'message': 'UID is required'}), 400
+
+    try:
+        # Ye admin_auth us JSON file ka use karke Firebase se user ko hamesha ke liye udayega
+        admin_auth.delete_user(uid)
+        return jsonify({'success': True, 'message': 'User deleted from Authentication.'})
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
