@@ -192,6 +192,7 @@
     import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; 
 
     document.addEventListener("DOMContentLoaded", () => {
+        // Navbar Styling
         const navbar = document.querySelector(".custom-navbar");
         if (navbar) {
             navbar.style.backgroundColor = "#0b132b";
@@ -202,20 +203,23 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 PRO MOBILE MENU LOGIC
+        // 🔥 1. PRO MOBILE MENU & CROSS 'X' BUTTON LOGIC
         const aside = document.querySelector("aside");
         
-        // Add 'X' Close button inside the mobile menu top right
         if (window.innerWidth <= 992 && aside) {
             const closeMenuBtn = document.createElement("button");
             closeMenuBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
             closeMenuBtn.className = "absolute top-6 right-6 text-white text-3xl font-black bg-white/10 w-12 h-12 rounded-full flex items-center justify-center hover:bg-white/20 z-50";
             aside.appendChild(closeMenuBtn);
             
+            // Fix: Let browser back-button handle closing so history stays clean
             closeMenuBtn.addEventListener("click", () => {
-                aside.classList.remove("menu-open");
-                document.body.style.overflow = "auto";
-                if(history.state && history.state.menuOpen) history.back();
+                if(history.state && history.state.menuOpen) {
+                    history.back(); // Triggers popstate, which cleanly closes menu
+                } else {
+                    aside.classList.remove("menu-open");
+                    document.body.style.overflow = "auto";
+                }
             });
         }
 
@@ -258,24 +262,38 @@
             }
         }
 
-        // 🔥 FIX: BROWSER BACK BUTTON LOGIC
+        // 🔥 2. AUTO-CLOSE MENU ON TAB CLICK
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                    aside.classList.remove("menu-open");
+                    document.body.style.overflow = "auto";
+                    if(history.state && history.state.menuOpen) {
+                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); // Replace menu state
+                    }
+                }
+            });
+        });
+
+        // 🔥 3. BROWSER BACK BUTTON PRO-LOGIC
         history.replaceState({ tab: 'view-overview' }, ""); 
 
         window.addEventListener("popstate", (e) => {
+            // Priority 1: Close menu if open (NO LOGOUT PROMPT HERE)
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
-                return;
+                return; // Stop function execution immediately
             }
 
+            // Priority 2: Tab handling
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id !== 'view-overview') {
-                // Not on default tab -> go back to default tab
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.getElementById('view-overview').classList.add('active');
                 history.pushState({ tab: 'view-overview' }, ""); 
             } else {
-                // On default tab -> show confirmation
+                // Priority 3: Default tab hit -> Logout Prompt
                 const conf = confirm("Are you sure you want to Logout?");
                 if (conf) {
                     document.getElementById('btnLogout').click();
@@ -285,10 +303,12 @@
             }
         });
 
-        // 🔥 FETCH INBOX MESSAGES REALTIME
+        // 🔥 4. FETCH INBOX MESSAGES REALTIME (BUG FIXED!)
         const inboxModal = document.getElementById("inboxModal");
         const btnOpenInbox = document.getElementById("btnOpenInbox");
         const btnCloseInbox = document.getElementById("btnCloseInbox");
+        const inboxMessagesList = document.getElementById("inboxMessagesList");
+        const inboxBadge = document.getElementById("inboxBadge");
         
         if(btnOpenInbox) {
             btnOpenInbox.addEventListener("click", () => {
@@ -298,6 +318,40 @@
             btnCloseInbox.addEventListener("click", () => {
                 inboxModal.classList.add("hidden");
                 document.body.style.overflow = "auto";
+            });
+
+            // Firebase Listener for Messages
+            const messagesQuery = query(collection(db, "contact_messages"), orderBy("timestamp", "desc"));
+            onSnapshot(messagesQuery, (snapshot) => {
+                inboxMessagesList.innerHTML = "";
+                let unreadCount = 0;
+                
+                if (snapshot.empty) {
+                    inboxMessagesList.innerHTML = '<p class="text-center text-slate-400 text-sm py-10">No messages yet.</p>';
+                    inboxBadge.classList.add("hidden");
+                    return;
+                }
+                
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    if (msg.status === "unread") unreadCount++;
+                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleString() : "Just now";
+                    
+                    inboxMessagesList.innerHTML += `
+                        <div class="p-4 bg-white border border-slate-100 rounded-xl shadow-sm mb-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-slate-800">${msg.name}</h3>
+                                <span class="text-[10px] text-slate-400">${time}</span>
+                            </div>
+                            <p class="text-xs text-brand mb-2"><i class="fa-solid fa-envelope mr-1"></i> ${msg.email}</p>
+                            <p class="text-sm text-slate-600">${msg.message}</p>
+                        </div>
+                    `;
+                });
+                
+                inboxBadge.innerText = unreadCount;
+                if (unreadCount > 0) inboxBadge.classList.remove("hidden");
+                else inboxBadge.classList.add("hidden");
             });
         }
     });

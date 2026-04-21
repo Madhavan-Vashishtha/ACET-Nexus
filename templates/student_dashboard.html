@@ -144,7 +144,6 @@
     import { db } from "./static/js/firebase.js";
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Global Navbar Styling
         const navbar = document.querySelector(".custom-navbar");
         if (navbar) {
             navbar.style.backgroundColor = "#0b132b";
@@ -155,7 +154,7 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 PRO MOBILE MENU & CROSS 'X' BUTTON LOGIC
+        // 🔥 PRO MOBILE MENU LOGIC
         const aside = document.querySelector("aside");
         
         if (window.innerWidth <= 992 && aside) {
@@ -165,9 +164,12 @@
             aside.appendChild(closeMenuBtn);
             
             closeMenuBtn.addEventListener("click", () => {
-                aside.classList.remove("menu-open");
-                document.body.style.overflow = "auto";
-                if(history.state && history.state.menuOpen) history.back();
+                if(history.state && history.state.menuOpen) {
+                    history.back(); 
+                } else {
+                    aside.classList.remove("menu-open");
+                    document.body.style.overflow = "auto";
+                }
             });
         }
 
@@ -210,7 +212,20 @@
             }
         }
 
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (For Student)
+        // 🔥 AUTO-CLOSE MENU ON TAB CLICK
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                    aside.classList.remove("menu-open");
+                    document.body.style.overflow = "auto";
+                    if(history.state && history.state.menuOpen) {
+                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); 
+                    }
+                }
+            });
+        });
+
+        // 🔥 BROWSER BACK BUTTON PRO-LOGIC
         history.replaceState({ tab: 'view-dashboard' }, ""); 
 
         window.addEventListener("popstate", (e) => {
@@ -233,19 +248,6 @@
                     history.pushState({ tab: 'view-dashboard' }, ""); 
                 }
             }
-        });
-
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = btn.getAttribute('data-target');
-                if (target !== 'view-dashboard') {
-                    history.pushState({ tab: target }, "");
-                }
-                if (window.innerWidth <= 992 && aside.classList.contains("menu-open")) {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                }
-            });
         });
     });
 </script>
