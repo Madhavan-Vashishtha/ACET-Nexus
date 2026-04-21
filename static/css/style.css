@@ -303,6 +303,8 @@ html, body, * {
         border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle premium border */
         animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy open effect */
     }
+
+    
     
     .nav-center.active { 
         display: block; 
@@ -319,6 +321,32 @@ html, body, * {
     .navbar .nav-link {
         display: inline-block;
         width: fit-content;
+    }
+
+    /* 🔥 FIX 1: Dropdown ke andar text humesha white rahega (चाहे कोई भी section हो) */
+    .custom-navbar.navbar-light-mode .nav-center .nav-link,
+    .custom-navbar.navbar-dark-mode .nav-center .nav-link {
+        color: #ffffff !important;
+    }
+
+    /* 🔥 FIX 2: Hover aur Active par underline bhi white hi rahegi */
+    .custom-navbar.navbar-light-mode .nav-center .nav-link::after,
+    .custom-navbar.navbar-dark-mode .nav-center .nav-link::after {
+        background-color: #ffffff !important;
+    }
+
+    /* 🔥 FIX 3: Red Dot ko wapas zinda karna aur align karna */
+    .nav-center .nav-link.active::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: red !important;
+        border-radius: 50%;
+        position: absolute;
+        left: -14px; /* Thoda aur left kiya taaki text se na chipke */
+        top: 50%;
+        transform: translateY(-50%);
+        display: block !important;
     }
 }
 
