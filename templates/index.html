@@ -313,19 +313,28 @@
                     `;
                 }
 
-                // 🔥 ADD LOGOUT TO HOME MOBILE MENU
+                // 🔥 DASHBOARD-STYLE PREMIUM LOGOUT BUTTON IN HOME MENU
                 const navLinks = document.querySelector(".nav-links");
                 if (navLinks && !document.getElementById("homeLogoutBtn")) {
                     const logoutLi = document.createElement("li");
-                    logoutLi.className = "nav-item";
-                    logoutLi.innerHTML = `<a href="#" class="nav-link mobile-close-link" id="homeLogoutBtn" style="color: #ff4d4d; font-weight: bold;">Logout <i class="fa-solid fa-right-from-bracket ml-1"></i></a>`;
+                    logoutLi.style.width = "100%"; // Formats it nicely in mobile
+                    logoutLi.innerHTML = `
+                        <button id="homeLogoutBtn" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 20px; margin-top: 15px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; font-family: inherit; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
+                    `;
                     navLinks.appendChild(logoutLi);
 
+                    // Add hover effect via JS
+                    const btn = document.getElementById("homeLogoutBtn");
+                    btn.addEventListener("mouseenter", () => btn.style.backgroundColor = "rgba(239, 68, 68, 0.2)");
+                    btn.addEventListener("mouseleave", () => btn.style.backgroundColor = "rgba(239, 68, 68, 0.1)");
+
                     // Logout Action
-                    document.getElementById("homeLogoutBtn").addEventListener("click", async (e) => {
+                    btn.addEventListener("click", async (e) => {
                         e.preventDefault();
                         await signOut(auth);
-                        window.location.reload(); // Reloads page to show logged-out state
+                        window.location.reload(); 
                     });
                 }
             }
