@@ -1,0 +1,247 @@
+/* RESET */
+html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
+}
+
+section {
+    scroll-snap-align: start;
+    min-height: 100vh;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* NAVBAR */
+.navbar {
+    padding-top: 15px;
+}
+
+.custom-navbar {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    padding: 30px 0;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+}
+
+.custom-navbar .container-fluid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    transition: all 0.3s ease;
+    justify-content: space-between;
+}
+
+.nav-left { justify-self: start; }
+.nav-center { justify-self: center; }
+.nav-right { justify-self: end; }
+
+.custom-navbar.navbar-dark-mode .nav-link { color: white !important; }
+.custom-navbar.navbar-dark-mode .nav-link:hover { color: white !important; }
+.custom-navbar.navbar-light-mode .nav-link { color: black !important; }
+.custom-navbar.navbar-light-mode .nav-link:hover { color: black !important; }
+
+.custom-navbar.navbar-dark-mode .nav-link::after { background-color: white; }
+.custom-navbar.navbar-light-mode .nav-link::after { background-color: black; }
+
+.nav-link.active { font-weight: 600; }
+.nav-link.active::after { width: 100%; }
+
+/* LOGO */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: white !important;
+    font-weight: 600;
+    font-size: 26px;
+    transition: 0.3s;
+}
+
+.logo-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.logo-text {
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.custom-navbar.navbar-dark-mode .logo-text { color: white; }
+.custom-navbar.navbar-light-mode .logo-text { color: black; }
+
+/* NAV LINKS */
+.nav-links {
+    gap: 50px;
+    cursor: pointer;
+    display: flex;
+}
+
+.navbar .nav-link {
+    font-weight: 400;
+    position: relative;
+    transition: 0.1s;
+    font-size: 17px;
+}
+
+.navbar .nav-link:hover,
+.nav-link.active {
+    font-weight: 500;
+    font-size: 19px;
+}
+
+.navbar .nav-link::after {
+    content: "";
+    position: absolute;
+    width: 0%;
+    height: 3px;
+    bottom: -5px;
+    left: 0;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.navbar .nav-link:hover::after { width: 100%; }
+.navbar .nav-link.active::after { width: 0; }
+.navbar .nav-link.active::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: red;
+    border-radius: 50%;
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* LOGIN BUTTON */
+.login-btn {
+    padding: 10px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s;
+    font-size: 16px;
+}
+
+.custom-navbar.navbar-dark-mode .login-btn { background: white; color: black; }
+.custom-navbar.navbar-light-mode .login-btn { background: black; color: white; }
+.custom-navbar.navbar-dark-mode .login-btn:hover { background: green; color: #f5f5f5; }
+.custom-navbar.navbar-light-mode .login-btn:hover { background: green; color: black; }
+
+
+/* ========================================================= */
+/* ============= PRO DASHBOARD ADDITIONS =================== */
+/* ========================================================= */
+
+/* Clean Scrollbars (Applied globally so dashboards look neat) */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Admin Tab Switching Animation */
+.tab-content { display: none; }
+.tab-content.active { 
+    display: block; 
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphism effects for Modals */
+.modal-backdrop {
+    backdrop-filter: blur(8px);
+    background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* ========================================================= */
+/* ============= PREMIUM UI / UX ADDITIONS ================= */
+/* ========================================================= */
+
+/* Subtle Dot Pattern Background */
+.bg-dot-pattern {
+    background-color: #f8fafc;
+    background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* Glassmorphism / Frosted Glass Effect */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Premium Card Hover Animation */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+/* Gradient Text */
+.text-gradient {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ========================================================= */
+/* ============= PRO DASHBOARD PREMIUM ADDITIONS ============= */
+/* ========================================================= */
+
+/* Clean Scrollbars */
+/* ================= GLOBAL INVISIBLE SCROLLBAR ================= */
+::-webkit-scrollbar { 
+    display: none; /* Chrome, Safari, Edge ke liye hide */
+}
+
+html, body, * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox ke liye hide */
+}
+
+/* Admin Tab Switching Animation */
+.tab-content { display: none; }
+.tab-content.active { 
+    display: block; 
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Premium Card Hover Animation */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+}
+
+/* Glassmorphism effects for Modals */
+.modal-backdrop {
+    backdrop-filter: blur(8px);
+    background-color: rgba(15, 23, 42, 0.6);
+}

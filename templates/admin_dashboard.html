@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Segoe UI', 'Inter', 'sans-serif'] }, colors: { brand: '#4f46e5', darkBg: '#0b132b', darkHover: '#1c2541' } } } }
+</script>
+
+<section class="pt-[70px] h-screen w-full flex bg-darkBg overflow-hidden">
+
+    <aside class="w-64 bg-darkBg text-slate-400 flex flex-col z-20 shrink-0 relative h-full">
+        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer group" onclick="window.location.href='/profile'">
+            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-black shadow-[0_4px_20px_rgba(79,70,229,0.4)] mb-3 border-2 border-slate-800 transition-transform hover:scale-105 duration-300">
+                A
+            </div>
+            <span id="adminName" class="hidden"></span>
+            <p class="text-[10px] font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full tracking-widest uppercase">System Admin</p>
+        </div>
+
+        <nav class="w-full px-4 py-4 flex flex-col gap-1.5 shrink-0">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 bg-brand text-white rounded-xl font-medium shadow-[0_4px_15px_rgba(79,70,229,0.4)] transition text-left text-sm" data-target="view-overview">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Overview
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-approvals">
+                <i class="fa-solid fa-user-clock w-5 text-center"></i> Approvals <span id="badgeApprovals" class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full hidden">0</span>
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-sections">
+                <i class="fa-solid fa-layer-group w-5 text-center"></i> Sections
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-students">
+                <i class="fa-solid fa-user-graduate w-5 text-center"></i> Students
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-teachers">
+                <i class="fa-solid fa-chalkboard-user w-5 text-center"></i> Teachers
+            </button>
+            <div class="w-full h-px bg-slate-800 my-2"></div>
+            <button id="btnOpenAllocate" class="w-full flex items-center gap-3 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition text-left text-sm">
+                <i class="fa-solid fa-link w-5 text-center"></i> Allocate Module
+            </button>
+        </nav>
+
+        <div class="px-5 pb-8 mt-auto w-full">
+            <div class="w-full h-px bg-slate-800 mb-6 opacity-50"></div>
+            <button id="btnLogout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-semibold w-full transition text-left text-sm">
+                <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8faff] rounded-tl-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.05)] mt-4">
+        
+        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-white/50 flex items-center justify-between px-10 shrink-0 z-10">
+            <div class="relative w-96 group">
+                <i class="fa-solid fa-search absolute left-4 top-3 text-slate-400"></i>
+                <input type="text" placeholder="Search records..." class="w-full bg-slate-100 border-none rounded-full pl-12 pr-4 py-2 focus:ring-2 focus:ring-brand outline-none text-sm transition-all">
+            </div>
+            <div>
+                <p class="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-lg" id="currentDateDisplay">Date</p>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-10 pt-12 no-scrollbar"> 
+            
+            <section id="view-overview" class="tab-content active">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">System Overview</h1>
+                
+                <div class="grid grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand text-2xl"><i class="fa-solid fa-user-graduate"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Students</p><p class="text-3xl font-black text-slate-800" id="statStudents">0</p></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 text-2xl"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Teachers</p><p class="text-3xl font-black text-slate-800" id="statTeachers">0</p></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-2xl"><i class="fa-solid fa-layer-group"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Sections</p><p class="text-3xl font-black text-slate-800" id="statClasses">0</p></div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-500 to-rose-600 p-6 rounded-3xl shadow-[0_8px_30px_rgba(244,63,94,0.3)] flex items-center gap-5 text-white hover:-translate-y-1 transition-transform animate-fade-in-up delay-200 cursor-pointer" onclick="document.querySelector('[data-target=view-approvals]').click()">
+                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl"><i class="fa-solid fa-user-clock"></i></div>
+                        <div><p class="text-red-100 font-bold mb-1 text-[10px] tracking-widest uppercase">Pending Approvals</p><p class="text-3xl font-black" id="statPending">0</p></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-8">
+                    <div class="col-span-2 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 animate-fade-in-up delay-200">
+                        <h2 class="font-bold text-lg text-slate-800 mb-6">System Wide Attendance</h2>
+                        <div class="h-64 flex items-center justify-center w-full"><canvas id="adminChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col h-full animate-fade-in-up delay-200">
+                        <h2 class="font-bold text-lg text-slate-800 mb-4 border-b border-slate-50 pb-3">Recent Allocations</h2>
+                        <div id="allocationsContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-approvals" class="tab-content">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Registration Approvals</h1>
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden border border-slate-100 animate-fade-in-up delay-100">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 tracking-wider">
+                            <tr>
+                                <th class="px-8 py-5 font-bold">User Details</th>
+                                <th class="px-8 py-5 font-bold">Role Requested</th>
+                                <th class="px-8 py-5 font-bold">Status</th>
+                                <th class="px-8 py-5 font-bold text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminApprovalsList" class="divide-y divide-slate-100">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-sections" class="tab-content">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Manage Sections</h1>
+                <div class="grid grid-cols-3 gap-8">
+                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-8 h-fit animate-fade-in-up">
+                        <h2 class="font-bold text-lg mb-4 text-slate-800">Create New Section</h2>
+                        <input type="text" id="inpNewSection" placeholder="e.g. B.Tech CS - 1A" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand">
+                        <button id="btnCreateSection" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition shadow-[0_4px_15px_rgba(79,70,229,0.3)]">Create Section</button>
+                    </div>
+                    <div class="col-span-2 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-100">
+                        <h2 class="font-bold text-lg mb-6 border-b border-slate-50 pb-3 text-slate-800">Active Sections</h2>
+                        <div id="sectionsListContainer" class="grid grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-students" class="tab-content">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Manage Students</h1>
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden border border-slate-100 animate-fade-in-up delay-100">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 tracking-wider">
+                            <tr>
+                                <th class="px-8 py-5 font-bold">Student Details</th>
+                                <th class="px-8 py-5 font-bold">Username</th>
+                                <th class="px-8 py-5 font-bold">Section</th>
+                                <th class="px-8 py-5 font-bold text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminStudentsList" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-teachers" class="tab-content">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Manage Teachers</h1>
+                <div class="grid grid-cols-3 gap-8 animate-fade-in-up delay-100" id="adminTeachersList"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="allocateModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-slate-100 transform transition-all">
+            <h2 class="text-2xl font-black text-slate-800 mb-6">Allocate Teacher</h2>
+            <select id="selTeacher" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-5 outline-none focus:ring-2 focus:ring-brand"></select>
+            <select id="selSection" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-5 outline-none focus:ring-2 focus:ring-brand"></select>
+            <input type="text" id="inpSubject" placeholder="e.g. Data Structures" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-8 outline-none focus:ring-2 focus:ring-brand">
+            <div class="flex gap-4 justify-end">
+                <button id="btnCloseAllocate" class="px-6 py-3 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-bold transition">Cancel</button>
+                <button id="btnSaveAllocate" class="px-6 py-3 bg-brand text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition">Save Allocation</button>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const navbar = document.querySelector(".custom-navbar");
+        if (navbar) {
+            navbar.style.backgroundColor = "#0b132b";
+            navbar.style.borderBottom = "none";
+            navbar.style.boxShadow = "none";
+            navbar.style.padding = "12px 0";
+            navbar.classList.add("navbar-dark-mode");
+            navbar.classList.remove("navbar-light-mode");
+        }
+    });
+</script>
+
+<script type="module" src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+
+<section class="login-section">
+    <div class="container" id="container">
+        
+        <div class="form-container sign-up-container">
+            <form>
+                <div id="step1" style="width: 100%;">
+                    <h1>Sign Up</h1>
+                    
+                    <div class="input-group">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="name" placeholder="Name" />
+                        <small class="error" id="regNameError"></small>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">✉️</span>
+                        <input type="email" id="email" placeholder="Email" />
+                        <small class="error" id="regEmailError"></small>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" placeholder="Password" />
+                        <small class="error" id="regPasswordError"></small>
+                    </div>
+                    <div class="input-group role-group">
+                        <span class="input-icon role-icon" id="roleIcon">📘</span>
+                        <select name="role" id="roleSelect" required>
+                            <option value="" disabled selected hidden>Register as</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                        </select>                    
+                        <span class="dropdown-icon">◡</span>
+                        <small class="error" id="regRoleError"></small>
+                    </div>
+                    
+                    <button type="button" class="action-btn" id="btnSendOtp" style="margin-top: 10px;">Send OTP</button>
+
+                    <div id="otpBox" style="display: none; width: 100%; transition: 0.3s; margin-top: 15px;">
+                        <p style="font-size: 13px; color: #10b981; font-weight: bold; margin-bottom: 10px;">OTP sent to your email!</p>
+                        <div class="input-group">
+                            <span class="input-icon">🔑</span>
+                            <input type="text" id="regOtp" placeholder="Enter 6-digit OTP" maxlength="6" />
+                        </div>
+                        <small class="error" id="otpError"></small>
+                        <button type="button" class="action-btn" id="btnVerifyOtp" style="background-color: #10b981; margin-top: 5px;">Verify & Continue</button>
+                    </div>
+
+                    <div class="toggle-link" style="margin-top: 15px;">
+                        or <a id="signInBtn" style="cursor: pointer;">Log in</a>
+                    </div>
+                </div>
+
+                <div id="usernameStep" style="display: none; width: 100%;">
+                    <h1 style="margin-bottom: 20px;">Create Username</h1>
+
+                    <div class="input-group username-group" id="usernameGroup" data-suffix="">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="customUsername" placeholder="Choose Username"/>
+                    </div>
+                    <small class="error" id="regUsernameError"></small>
+                    
+                    <div class="input-group" style="margin-top: 10px;">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+                        <span class="eye-icon">
+                            <img id="toggleConfirmPassword" src="https://cdn-icons-png.flaticon.com/128/159/159604.png" alt="toggle" width="20">
+                        </span>
+                    </div>
+                    <small class="error" id="regConfirmError"></small>
+                    
+                    <button type="button" id="finalRegister" class="action-btn" style="margin-top: 20px;">Create Account</button>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="form-container sign-in-container">
+            <form>
+                <h1>Log in</h1>
+                
+                <div class="input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="loginUsername" placeholder="Username / Email" />
+                    <small class="error" id="loginUserError"></small>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="loginPassword" placeholder="Password" />
+                    <span class="eye-icon">
+                        <img id="togglePassword" src="https://cdn-icons-png.flaticon.com/128/159/159604.png" alt="toggle" width="20">
+                    </span>
+                    <small class="error" id="loginPassError"></small>
+                </div>
+
+                <div class="options">
+                    <label><input type="checkbox"> Remember Me</label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+                
+                <button type="button" class="action-btn" id="loginBtn">Log in</button>
+                
+                <button type="button" class="google-btn" id="googleLoginBtn">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18">
+                    Continue with Google
+                </button>
+                <div class="toggle-link">
+                    or <a id="signUpBtn">Sign up</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <h1 class="welcome-anim">Welcome</h1>
+                </div>
+                <div class="overlay-panel overlay-right">
+                    <h1>Welcome <span class="fade-text">Back</span></h1>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

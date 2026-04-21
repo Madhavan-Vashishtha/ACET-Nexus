@@ -1,0 +1,43 @@
+<nav class="navbar navbar-expand-lg custom-navbar navbar-dark-mode">
+    <div class="container-fluid px-5">
+
+        <div class="nav-left">
+        <a class="navbar-brand logo" href="#">
+            <img src="https://cdn-icons-png.flaticon.com/128/8030/8030198.png" class="logo-img">
+            <span class="logo-text">ACET Nexus</span>
+        </a>
+        </div>
+
+        <div class="nav-center">
+        <div class="nav-center">
+            <ul class="navbar-nav nav-links">
+                {% if show_links %}
+                <li class="nav-item">
+                    <a href="#home" class="nav-link active">Home</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#features" class="nav-link">Features</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#about" class="nav-link">About</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#contact" class="nav-link">Contact</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        </div>
+
+        <div class="nav-right">
+            <!-- LOGIN -->
+            {% if show_login %}
+            <a href="{{url_for('login')}}" class="login-btn">Login</a>
+            {% endif %}
+        </div>
+
+    </div>
+</nav>

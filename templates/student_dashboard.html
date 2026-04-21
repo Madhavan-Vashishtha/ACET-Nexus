@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>
+    tailwind.config = {
+        theme: { extend: { fontFamily: { sans: ['Segoe UI', 'Inter', 'sans-serif'] }, colors: { brand: '#4361ee', darkBg: '#0b132b', darkHover: '#1c2541' } } }
+    }
+</script>
+
+<section class="pt-[70px] h-screen w-full flex bg-darkBg overflow-hidden">
+
+    <aside class="w-64 bg-darkBg text-slate-400 flex flex-col z-20 shrink-0 relative h-full">
+        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer group" onclick="window.location.href='/profile'">
+            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-black shadow-[0_4px_20px_rgba(67,97,238,0.4)] mb-3 border-2 border-slate-800 transition-transform hover:scale-105 duration-300">
+                S
+            </div>
+            <span id="welcomeText" class="hidden"></span>
+            <p class="text-[11px] font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full tracking-widest uppercase" id="studentSectionBadge">SEC: --</p>
+        </div>
+
+        <nav class="w-full px-4 py-4 flex flex-col gap-1.5 shrink-0">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 bg-brand text-white rounded-xl font-medium shadow-[0_4px_15px_rgba(67,97,238,0.4)] transition text-left text-sm" data-target="view-dashboard">
+                <i class="fa-solid fa-desktop w-5 text-center"></i> Dashboard
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-attendance">
+                <i class="fa-solid fa-chart-line w-5 text-center"></i> Attendance
+            </button>
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-assignments">
+                <i class="fa-solid fa-file-pen w-5 text-center"></i> Assignments
+            </button>
+        </nav>
+
+        <div class="px-5 pb-8 mt-auto w-full">
+            <button id="btnLogout" class="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-medium w-full transition text-left text-sm">
+                <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8faff] rounded-tl-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.05)] mt-4">
+        <div class="flex-1 overflow-y-auto p-10 pt-12 no-scrollbar"> 
+
+            <div id="liveSessionBanner" class="hidden bg-gradient-to-r from-brand to-blue-500 text-white p-6 rounded-2xl mb-8 flex justify-between items-center shadow-lg transform transition-all duration-500 scale-95 opacity-0">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl animate-pulse"><i class="fa-solid fa-satellite-dish"></i></div>
+                    <div>
+                        <p class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Live Attendance Call</p>
+                        <h2 class="text-2xl font-bold" id="liveSubjectName">Subject Name</h2>
+                    </div>
+                </div>
+                <button id="btnMarkPresent" class="bg-white text-brand px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-transform">Mark Present</button>
+            </div>
+
+            <section id="view-dashboard" class="tab-content active">
+                <div class="flex justify-between items-center mb-8 animate-fade-in-up">
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Dashboard Overview</h1>
+                    <p class="text-sm font-bold text-slate-500 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-slate-100" id="currentDateDisplay">Date</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-8 mb-8">
+                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-100 hover:-translate-y-1 transition-transform">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-brand text-3xl"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Overall Attendance</p><p class="text-4xl font-black text-slate-800" id="statAttPercent">0%</p></div>
+                    </div>
+                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 text-3xl"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Total Classes</p><p class="text-4xl font-black text-slate-800" id="statTotalSessions">0</p></div>
+                    </div>
+                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-300 hover:-translate-y-1 transition-transform">
+                        <div class="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-3xl"><i class="fa-solid fa-file-pen"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Pending Tasks</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[400px] animate-fade-in-up delay-200">
+                        <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">My Subjects</h2>
+                        <div id="mySubjectsContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[400px] animate-fade-in-up delay-300">
+                        <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Remarks</h2>
+                        <div id="myRemarksContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-attendance" class="tab-content">
+                <div class="flex justify-between items-center mb-8 animate-fade-in-up">
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Attendance Analytics</h1>
+                </div>
+
+                <div class="grid grid-cols-3 gap-8 mb-8">
+                    <div class="col-span-2 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-100">
+                        <h2 class="font-bold text-lg text-slate-800 mb-6">Attendance Trend</h2>
+                        <div class="h-64 flex items-center justify-center w-full"><canvas id="attendanceLineChart"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 flex flex-col items-center justify-center animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
+                        <h2 class="font-bold text-lg text-slate-800 mb-8 w-full text-left">Current Target</h2>
+                        <div class="relative w-44 h-44">
+                            <canvas id="attendanceChart"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                <span class="text-4xl font-black text-slate-800" id="graphPercentage">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-300">
+                    <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Activity</h2>
+                    <div id="myHistoryContainer" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
+                </div>
+            </section>
+
+            <section id="view-assignments" class="tab-content">
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Pending Assignments</h1>
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-100">
+                    <div id="myAssignmentsContainer" class="grid grid-cols-2 gap-6"></div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="submitModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-slate-100 transform transition-all">
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Submit Task</h2>
+            <p class="text-sm font-semibold text-brand mb-6" id="submitTaskTitle">Task Title</p>
+            <textarea id="submitAnswer" rows="4" placeholder="Your Answer / Link..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-6 outline-none focus:ring-2 focus:ring-brand"></textarea>
+            <div class="flex gap-4 justify-end">
+                <button id="btnCloseSubmit" class="px-6 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-medium transition">Cancel</button>
+                <button id="btnConfirmSubmit" class="px-6 py-2.5 bg-brand text-white rounded-xl font-medium shadow-md hover:bg-blue-700 transition">Submit Work</button>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const navbar = document.querySelector(".custom-navbar");
+        if (navbar) {
+            navbar.style.backgroundColor = "#0b132b";
+            navbar.style.borderBottom = "none";
+            navbar.style.boxShadow = "none";
+            navbar.style.padding = "12px 0"; /* <-- YE LINE NAVBAR KI HEIGHT CHOTI KAREGI */
+            navbar.classList.add("navbar-dark-mode");
+            navbar.classList.remove("navbar-light-mode");
+        }
+    });
+</script>
+
+<script type="module" src="{{ url_for('static', filename='js/student_dashboard.js') }}"></script>
+{% endblock %}

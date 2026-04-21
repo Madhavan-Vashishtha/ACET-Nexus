@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | ACET Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] }, colors: { brand: '#1d4ed8' } } }
+        }
+    </script>
+    <style>
+        body { background-color: #f1f5f9; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6 text-slate-800 text-sm">
+
+    <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        
+        <div class="bg-gradient-to-r from-blue-600 to-brand h-32 relative">
+            <button id="btnBackToDashboard" class="absolute top-4 left-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg backdrop-blur-sm font-medium transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </button>
+        </div>
+
+        <div class="px-8 pb-8 relative">
+            
+            <div class="flex justify-between items-end -mt-12 mb-8">
+                <div class="relative">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=eff6ff&color=1d4ed8" alt="Profile" class="w-24 h-24 rounded-full border-4 border-white shadow-md bg-white object-cover">
+                    <div class="absolute bottom-0 right-0 bg-brand text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition">
+                        <i class="fa-solid fa-camera text-xs"></i>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <span id="roleBadge" class="bg-blue-100 text-brand px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-200">Loading Role...</span>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">Personal Information</h2>
+            
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Full Name <span class="text-slate-400 font-normal capitalize">(Locked)</span></label>
+                    <input type="text" id="profName" disabled class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-slate-500 font-medium cursor-not-allowed">
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Email Address <span class="text-slate-400 font-normal capitalize">(Locked)</span></label>
+                    <input type="email" id="profEmail" disabled class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-slate-500 font-medium cursor-not-allowed">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Phone Number</label>
+                    <input type="text" id="profPhone" placeholder="+91 XXXXX XXXXX" class="w-full bg-white border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-brand transition">
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Profile Picture URL</label>
+                    <input type="text" id="profPicUrl" placeholder="https://example.com/my-photo.jpg" class="w-full bg-white border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-brand transition">
+                    <p class="text-[10px] text-slate-400 mt-1">Paste a direct image link to update your avatar.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 border-t border-slate-100 pt-6">
+                <button id="btnSaveProfile" class="bg-brand text-white px-6 py-2.5 rounded-lg font-bold shadow-sm hover:bg-blue-800 transition flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/profile.js"></script>
+</body>
+</html>

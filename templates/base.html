@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance System</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    
+    {% include "nav.html" %}
+    {% block content %}{% endblock %}
+
+<!-- 🔥 Firebase Scripts -->
+<script type="module" src="{{ url_for('static', filename='js/firebase.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+<!-- 🔥 UI SCRIPT ONLY -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ================= NAVBAR =================
+    const sections = document.querySelectorAll("[id]");
+    const navbar = document.querySelector(".custom-navbar");
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    if (sections.length && navbar && navLinks.length) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+
+                    const id = entry.target.id;
+
+                    navLinks.forEach(link => {
+                        link.classList.remove("active");
+
+                        if (link.getAttribute("href") === "#" + id) {
+                            link.classList.add("active");
+                        }
+                    });
+
+                    if (entry.target.classList.contains("light")) {
+                        navbar.classList.add("navbar-light-mode");
+                        navbar.classList.remove("navbar-dark-mode");
+                    } else {
+                        navbar.classList.add("navbar-dark-mode");
+                        navbar.classList.remove("navbar-light-mode");
+                    }
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(section => observer.observe(section));
+    }
+
+    // ================= PANEL SWITCH =================
+    const signUpButton = document.getElementById('signUpBtn');
+    const signInButton = document.getElementById('signInBtn');
+    const container = document.getElementById('container');
+
+    if (signUpButton && signInButton && container) {
+        signUpButton.addEventListener('click', () => {
+            container.classList.add("right-panel-active");
+        });
+
+        signInButton.addEventListener('click', () => {
+            container.classList.remove("right-panel-active");
+        });
+    }
+
+    // ================= ROLE ICON + SUFFIX =================
+    const usernameGroup = document.getElementById("usernameGroup");
+    const roleSelect = document.getElementById("roleSelect");
+    const roleIcon = document.getElementById("roleIcon");
+
+    window.getSuffix = function(role) {
+        if (role === "student") return "@acet.stud.in";
+        if (role === "teacher") return "@acet.teach.in";
+        return "";
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener("change", function () {
+
+            if (roleIcon) {
+                roleIcon.textContent = this.value === "student" ? "🎓" : "👨‍🏫";
+            }
+
+            let suffix = getSuffix(roleSelect.value);
+            if (usernameGroup) {
+                usernameGroup.setAttribute("data-suffix", suffix);
+            }
+        });
+    }
+
+    // ================= STEP SWITCH =================
+    const signupNext = document.getElementById("signupNext");
+    const usernameStep = document.getElementById("usernameStep");
+
+    if (signupNext && roleSelect && usernameStep) {
+        signupNext.addEventListener("click", () => {
+
+            let role = roleSelect.value;
+
+            if (!role) {
+                alert("Select role first");
+                return;
+            }
+
+            let suffix = getSuffix(role);
+            usernameGroup.setAttribute("data-suffix",suffix);
+
+            document.querySelectorAll(".sign-up-container form > *:not(#usernameStep)")
+                .forEach(el => el.style.display = "none");
+
+            usernameStep.style.display = "block";
+        });
+    }
+
+    // ================= USERNAME CHECK =================
+    const customUsername = document.getElementById("customUsername");
+    const usernameError = document.getElementById("usernameError");
+
+    if (customUsername && roleSelect) {
+        customUsername.addEventListener("input", async () => {
+
+            let username = customUsername.value;
+            let role = roleSelect.value;
+
+            if (!username || !role) return;
+
+            let res = await fetch("/check-username", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username, role})
+            });
+
+            let data = await res.json();
+
+            if (usernameError) {
+                usernameError.innerText = data.available ? "" : "Username already exists";
+            }
+        });
+    }
+
+    // ================= SHOW PASSWORD LOGIN =================
+    const passwordInput = document.getElementById("loginPassword");
+    const toggleIcon = document.getElementById("togglePassword");
+
+    if (toggleIcon && passwordInput) {
+        toggleIcon.addEventListener("click", () => {
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                toggleIcon.src = "https://cdn-icons-png.flaticon.com/128/10812/10812267.png";
+            } else {
+                passwordInput.type = "password";
+                toggleIcon.src = "https://cdn-icons-png.flaticon.com/128/159/159604.png";
+            }
+        });
+    }
+
+    // ================= SHOW PASSWORD CONFIRM =================
+    const passwordInputConfirm = document.getElementById("confirmPassword");
+    const toggleIconConfirm = document.getElementById("toggleConfirmPassword");
+
+    if (toggleIconConfirm && passwordInputConfirm) {
+        toggleIconConfirm.addEventListener("click", () => {
+            if (passwordInputConfirm.type === "password") {
+                passwordInputConfirm.type = "text";
+                toggleIconConfirm.src = "https://cdn-icons-png.flaticon.com/128/10812/10812267.png";
+            } else {
+                passwordInputConfirm.type = "password";
+                toggleIconConfirm.src = "https://cdn-icons-png.flaticon.com/128/159/159604.png";
+            }
+        });
+    }
+
+});
+</script>
+
+</body>
+</html>

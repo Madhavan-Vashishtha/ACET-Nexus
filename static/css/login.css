@@ -1,0 +1,341 @@
+/* .login-section {
+    height: 100vh;
+    background: url("../images/bg1.jpg") no-repeat center center/cover;
+    display: flex;
+    align-items: center;
+    position: relative;
+} */
+
+
+/* --- Login Section Wrapper --- */
+.login-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background: url("../images/bg.png") no-repeat center center/cover;
+}
+
+/* --- Container Styling --- */
+.login-section .container {
+    background: #f6f5f7;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    width: 800px;
+    max-width: 100%;
+    height: 480px;
+}
+
+.login-section .form-container {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transition: all 0.6s ease-in-out;
+}
+
+/* --- Form Layout --- */
+.login-section form {
+    background-color: #f6f5f7;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 50px;
+    height: 100%;
+    text-align: left;
+}
+
+.login-section form h1 {
+    color: black;
+    font-weight: 700;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+/* --- Input Fields (Bottom border style) --- */
+.login-section .input-group {
+    position: relative;
+    margin-bottom: 20px;
+    height: 48px;
+}
+.login-section .input-group input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #999;
+    padding: 10px 10px 10px 30px; 
+    width: 100%;
+    font-size: 13px;
+    transition: border-color 0.3s;
+}
+
+/* Select styling */
+.role-group select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #999;
+    padding: 10px 30px 10px 30px;
+    width: 100%;
+    font-size: 13px;
+    appearance: none;
+    color: #999; /* placeholder color */
+    cursor: pointer;
+}
+
+.role-group {
+    height: 48px;
+}
+
+/* When value selected → black text */
+.role-group select:valid {
+    color: black;
+}
+
+/* Left icon */
+.role-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+}
+
+/* Right dropdown arrow */
+.dropdown-icon {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 12px;
+    color: #555;
+}
+
+.login-section .input-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+
+.login-section .eye-icon {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+/* --- Checkbox & Forgot Password --- */
+.login-section .options {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 11px;
+    margin-bottom: 25px;
+    color: #666;
+}
+.login-section .options a { color: #666; text-decoration: none; }
+.login-section .options a:hover { text-decoration: underline; }
+.login-section .options label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* --- Button Styling --- */
+.login-section .action-btn{
+    border-radius: 4px;
+    border: none;
+    background-color: #3b3b3b;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 12px 45px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: transform 80ms ease-in;
+    width: 100%;
+    cursor: pointer;
+}
+.login-section .action-btn:active { transform: scale(0.95); }
+
+.login-section .action-btn:hover {
+    background-color: rgb(0, 0, 176);
+}
+
+.google-btn {
+    margin-top: 10px;
+    border-radius: 4px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.3s;
+}
+
+.login-section .google-btn:active { transform: scale(0.95); }
+
+.google-btn:hover {
+    background-color: grey;
+}
+
+/* --- Toggle Links (Log in / Sign up text) --- */
+.login-section .toggle-link {
+    font-size: 12px;
+    margin-top: 20px;
+    color: black;
+    text-align: center;
+    width: 100%;
+}
+.login-section .toggle-link a {
+    color: #3b3b3b;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* --- Sliding Logic (Left/Right Shift) --- */
+.login-section .sign-in-container { left: 0; width: 50%; z-index: 2; }
+.login-section .sign-up-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
+
+.login-section .container.right-panel-active .sign-in-container {
+    transform: translateX(100%);
+    opacity: 0;
+}
+.login-section .container.right-panel-active .sign-up-container {
+    transform: translateX(100%);
+    opacity: 1;
+    z-index: 5;
+    animation: show 0.6s;
+}
+
+@keyframes show {
+    0%, 49.99% { opacity: 0; z-index: 1; }
+    50%, 100% { opacity: 1; z-index: 5; }
+}
+
+/* --- Overlay Container & Background Pattern --- */
+.login-section .overlay-container {
+    position: absolute;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    transition: transform 0.6s ease-in-out;
+    z-index: 100;
+}
+
+.login-section .container.right-panel-active .overlay-container {
+    transform: translateX(-100%);
+}
+
+.login-section .overlay {
+    background: url("../images/bg4.png") no-repeat center center/cover;
+    color: #FFFFFF;
+    position: relative;
+    left: -100%;
+    height: 100%;
+    width: 200%;
+    transform: translateX(0);
+    transition: transform 0.6s ease-in-out;
+}
+
+.login-section .container.right-panel-active .overlay {
+    transform: translateX(50%);
+}
+
+.login-section .overlay-panel {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    height: 100%;
+    width: 50%;
+    transform: translateX(0);
+    transition: transform 0.6s ease-in-out;
+}
+
+.login-section .overlay-left { transform: translateX(-20%); }
+.login-section .container.right-panel-active .overlay-left { transform: translateX(0); }
+
+.login-section .overlay-right { right: 0; transform: translateX(0); }
+.login-section .container.right-panel-active .overlay-right { transform: translateX(20%); }
+
+/* --- Text Animations (Welcome and Back) --- */
+.login-section .overlay h1 { font-size: 2.5rem; margin: 0; }
+
+.login-section .welcome-anim {
+    transform: scale(0.8);
+    transition: transform 0.6s ease-in-out;
+}
+.login-section .container.right-panel-active .welcome-anim {
+    transform: scale(1.1); 
+}
+
+.login-section .fade-text {
+    display: inline-block;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+.login-section .container.right-panel-active .fade-text {
+    opacity: 0;
+}
+
+.error {
+    position: absolute;
+    bottom: -14px;
+    left: 0;
+    height: 12px;
+    color: red;
+    font-size: 11px;
+    margin-top: 2px;
+    display: block;
+}
+
+.username-group {
+    position: relative;
+}
+
+#customUsername {
+    padding-right: 120px;
+}
+
+.username-group::after {
+    content: attr(data-suffix);
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #555;
+    font-size: 13px;
+}
+
+#usernameStep {
+    animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.suggestion {
+    display: inline-block;
+    margin-right: 8px;
+    cursor: pointer;
+    color: #007bff;
+    font-size: 11px;
+}
+
+.suggestion:hover {
+    text-decoration: underline;
+}

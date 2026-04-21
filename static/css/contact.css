@@ -1,0 +1,127 @@
+/* CONTACT SECTION */
+.contact-section {
+    max-height: 100vh;
+    padding: 120px 60px;
+    background: url("../images/bg8.png") no-repeat center center/cover;;
+    overflow: hidden;
+}
+
+/* CONTAINER */
+.contact-container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+/* TITLE */
+.contact-text {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.contact-text h1 {
+    font-size: 42px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.contact-text p {
+    margin-top: 10px;
+    color: #475569;
+}
+
+/* MAIN BOX */
+.contact-box {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+}
+
+/* LEFT SIDE */
+.contact-info {
+    flex: 1;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    padding: 18px;
+    border-radius: 14px;
+}
+
+.contact-info h2 {
+    margin-bottom: 20px;
+    color: #1e293b;
+    font-size: 26px;
+    text-align: center;
+}
+
+.contact-info p {
+    color: #475569;
+    font-size: 16px;
+}
+
+/* INFO ITEMS */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 16px;
+}
+
+.info-item img {
+    width: 30px;
+    margin-bottom: 10px;
+}
+
+/* RIGHT FORM */
+.contact-form {
+    flex: 1;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 20px;
+}
+
+.contact-form h2 {
+    margin-bottom: 20px;
+    color: #1e293b;
+    font-size: 26px;
+    text-align: center;
+}
+
+/* FORM */
+.contact-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* INPUTS */
+.contact-form input,
+.contact-form textarea {
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
+}
+
+/* TEXTAREA */
+.contact-form textarea {
+    height: 70px;
+    resize: none;
+}
+
+/* BUTTON */
+.contact-form button {
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.contact-form button:hover {
+    transform: translateY(-2px);
+    background: black;
+}

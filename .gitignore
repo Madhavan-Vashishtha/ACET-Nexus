@@ -1,0 +1,14 @@
+# Python Environments & Cache
+__pycache__/
+venv/
+env/
+*.pyc
+
+# Backend Secrets
+.env
+
+# Frontend Secrets
+static/js/config.js
+
+# Mac OS files (Agar mac use kar raha hai to)
+.DS_Store

@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Custom Scrollbar for Admin */
+/* ================= HIDE SCROLLBAR BUT KEEP SCROLLING ================= */
+/* Chrome, Safari, Edge, Opera ke liye */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Firefox, IE ke liye */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.tab-content { display: none; min-height: 0 !important; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+
+@keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+.modal-backdrop { backdrop-filter: blur(8px); background-color: rgba(15, 23, 42, 0.6); }
