@@ -57,15 +57,6 @@
                 <i class="fa-solid fa-search absolute left-4 top-3 text-slate-400"></i>
                 <input type="text" placeholder="Search records..." class="w-full bg-slate-100 border-none rounded-full pl-12 pr-4 py-2 focus:ring-2 focus:ring-brand outline-none text-sm transition-all">
             </div>
-            <div>
-                <p class="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-lg" id="currentDateDisplay">Date</p>
-            </div>
-        </header>
-        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-white/50 flex items-center justify-between px-10 shrink-0 z-10">
-            <div class="relative w-96 group">
-                <i class="fa-solid fa-search absolute left-4 top-3 text-slate-400"></i>
-                <input type="text" placeholder="Search records..." class="w-full bg-slate-100 border-none rounded-full pl-12 pr-4 py-2 focus:ring-2 focus:ring-brand outline-none text-sm transition-all">
-            </div>
             <div class="flex items-center gap-6">
                 <div class="relative cursor-pointer hover:scale-110 transition" id="btnOpenInbox">
                     <i class="fa-solid fa-bell text-slate-500 text-xl hover:text-brand transition"></i>
@@ -181,6 +172,7 @@
             </div>
         </div>
     </div>
+    
     <div id="inboxModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center">
         <div class="bg-white rounded-3xl w-[500px] max-h-[80vh] flex flex-col shadow-2xl border border-slate-100 transform transition-all">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
@@ -197,7 +189,7 @@
 
 <script type="module">
     import { db } from "./static/js/firebase.js";
-    import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; // Adjust import path if needed
+    import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; 
 
     document.addEventListener("DOMContentLoaded", () => {
         const navbar = document.querySelector(".custom-navbar");
@@ -210,7 +202,7 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 PRO MOBILE MENU & BACK BUTTON LOGIC
+        // 🔥 PRO MOBILE MENU LOGIC
         const aside = document.querySelector("aside");
         
         // Add 'X' Close button inside the mobile menu top right
@@ -266,50 +258,31 @@
             }
         }
 
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (Tabs & Logout Prevention)
+        // 🔥 FIX: BROWSER BACK BUTTON LOGIC
         history.replaceState({ tab: 'view-overview' }, ""); 
 
         window.addEventListener("popstate", (e) => {
-            // Case 1: Menu is open -> Just close menu
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
                 return;
             }
 
-            // Case 2: Handing Tab Navigation
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id !== 'view-overview') {
-                // Return to overview automatically
+                // Not on default tab -> go back to default tab
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.getElementById('view-overview').classList.add('active');
-                // Trap user again so next back triggers logout prompt
                 history.pushState({ tab: 'view-overview' }, ""); 
             } else {
-                // Case 3: They are on overview and pressed back
-                const conf = confirm("Are you sure you want to Logout & Exit?");
+                // On default tab -> show confirmation
+                const conf = confirm("Are you sure you want to Logout?");
                 if (conf) {
-                    document.getElementById('btnLogout').click(); // Trigger logout
+                    document.getElementById('btnLogout').click();
                 } else {
-                    history.pushState({ tab: 'view-overview' }, ""); // Trap again
+                    history.pushState({ tab: 'view-overview' }, ""); 
                 }
             }
-        });
-
-        // Push state when clicking any sidebar tab
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = btn.getAttribute('data-target');
-                if (target !== 'view-overview') {
-                    history.pushState({ tab: target }, "");
-                }
-                
-                // Close menu if mobile
-                if (window.innerWidth <= 992 && aside.classList.contains("menu-open")) {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                }
-            });
         });
 
         // 🔥 FETCH INBOX MESSAGES REALTIME

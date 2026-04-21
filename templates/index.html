@@ -230,31 +230,47 @@
 </script>
 
 <script type="module">
-    import { auth, db } from "./static/js/firebase.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { auth, db } from "./static/js/firebase.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Logged In: Change Get Started to directly go to Dashboard
-            const btnGetStarted = document.getElementById("btnGetStarted");
-            if(btnGetStarted) btnGetStarted.href = "/profile"; // Ya router function lagao
-
-            // Replace Login Button with Profile Circle
-            const mainLoginBtn = document.getElementById("mainLoginBtn");
-            if(mainLoginBtn) {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch user data from Firestore to get their Role
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                const userData = userDoc.exists() ? userDoc.data() : {};
-                const avatarUrl = userData.profilePic || `https://ui-avatars.com/api/?name=${userData.name || 'U'}&background=eff6ff&color=1d4ed8`;
+                let userRole = "student"; // Default
+                let avatarUrl = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=eff6ff&color=1d4ed8`;
 
-                mainLoginBtn.outerHTML = `
-                    <a href="/profile" style="display:flex; align-items:center; text-decoration:none;">
-                        <img src="${avatarUrl}" style="width:38px; height:38px; border-radius:50%; border:2px solid white; box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-                    </a>
-                `;
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    userRole = userData.role || "student";
+                    if(userData.profilePic) avatarUrl = userData.profilePic;
+                }
+
+                // Decide the correct dashboard path
+                let dashPath = "/dashboard";
+                if(userRole === "admin") dashPath = "/admin-dashboard";
+                else if(userRole === "teacher") dashPath = "/teacher-dashboard";
+                else if(userRole === "student") dashPath = "/student-dashboard";
+
+                // 🔥 FIX: Change "Get Started" to point to the correct Dashboard
+                const btnGetStarted = document.getElementById("btnGetStarted"); // MAKE SURE THIS ID EXISTS ON YOUR BUTTON
+                if(btnGetStarted) {
+                    btnGetStarted.href = dashPath;
+                    btnGetStarted.innerText = "Go to Dashboard";
+                }
+
+                // Replace Login Button in Navbar with Profile Circle
+                const mainLoginBtn = document.getElementById("mainLoginBtn");
+                if(mainLoginBtn) {
+                    mainLoginBtn.outerHTML = `
+                        <a href="/profile" style="display:flex; align-items:center; text-decoration:none;">
+                            <img src="${avatarUrl}" style="width:38px; height:38px; border-radius:50%; border:2px solid white; box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+                        </a>
+                    `;
+                }
             }
-        }
-    });
-</script>
+        });
+    </script>
 
 {% endblock %}
