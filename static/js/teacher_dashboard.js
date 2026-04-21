@@ -1,6 +1,7 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, query, where, getDocs, addDoc, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { showToast } from "./toast.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -42,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     setupImpersonationUI();
                     await loadTeacherData(viewAsId);
                 } else {
-                    alert("Unauthorized Access!");
+                    showToast("Unauthorized Access!", "error");
                     window.location.href = "/login";
                 }
             } else {
@@ -84,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
             }
 
-            // ================= DYNAMIC AVATAR INITIALS =================
             const nameParts = fullName.trim().split(/\s+/);
             let initials = "T";
             if (nameParts.length === 1) {
@@ -143,53 +143,133 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 3. LIVE SESSION LOGIC =================
+    // ================= 3. 🔥 DYNAMIC QR LIVE SESSION LOGIC 🔥 =================
     const sessionModal = document.getElementById("sessionModal");
-    const activeSessionAlert = document.getElementById("activeSessionAlert");
-    const timerDisplay = document.getElementById("timerDisplay");
+    const btnOpenSessionModal = document.getElementById("btnOpenSessionModal");
+    const btnCloseSessionModal = document.getElementById("btnCloseSessionModal");
+    const btnStartSession = document.getElementById("btnStartSession");
+    
+    const qrDisplayModal = document.getElementById("qrDisplayModal");
+    const btnCloseQr = document.getElementById("btnCloseQr");
+    const qrCodeContainer = document.getElementById("qrCodeContainer");
+    const qrTimerDisplay = document.getElementById("qrTimerDisplay");
+    const qrClassDisplay = document.getElementById("qrClassDisplay");
+
+    let activeSessionId = null;
+    let countdownInterval = null;
+    let qrRefreshInterval = null;
+    let qrcodeObj = null;
 
     if(!isViewOnly) {
-        document.getElementById("btnOpenSessionModal").addEventListener("click", () => sessionModal.classList.remove("hidden"));
-        document.getElementById("btnCloseSessionModal").addEventListener("click", () => sessionModal.classList.add("hidden"));
+        btnOpenSessionModal.addEventListener("click", () => sessionModal.classList.remove("hidden"));
+        btnCloseSessionModal.addEventListener("click", () => sessionModal.classList.add("hidden"));
 
-        document.getElementById("btnStartSession").addEventListener("click", async () => {
+        btnStartSession.addEventListener("click", async () => {
             const selectedValue = document.getElementById("selMyClass").value;
-            if(!selectedValue) return alert("Select a class first!");
+            if(!selectedValue) return showToast("Select a class first!", "error");
 
             const [sectionId, subjectName] = selectedValue.split("|");
             
+            btnStartSession.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating QR...`;
+            btnStartSession.disabled = true;
+            
             try {
                 const now = new Date();
-                const expiresAt = new Date(now.getTime() + 5 * 60000); 
+                const expiresAt = new Date(now.getTime() + 5 * 60000); // 5 mins
+                const initialToken = Math.random().toString(36).substring(2, 10);
 
                 const sessionRef = await addDoc(collection(db, "attendance_sessions"), {
-                    teacherId: currentTeacherId, sectionId: sectionId, subject: subjectName, createdAt: now, expiresAt: expiresAt, isActive: true
+                    teacherId: currentTeacherId, 
+                    sectionId: sectionId, 
+                    subject: subjectName, 
+                    createdAt: now, 
+                    expiresAt: expiresAt, 
+                    isActive: true,
+                    currentToken: initialToken
                 });
 
+                activeSessionId = sessionRef.id;
+                
                 sessionModal.classList.add("hidden");
-                activeSessionAlert.classList.remove("hidden");
-                startCountdown(300, sessionRef.id); 
+                qrDisplayModal.classList.remove("hidden");
+                qrClassDisplay.innerText = `${subjectName} (Sec: ${sectionId})`;
+                
+                startSessionLogic(initialToken);
+                showToast("Live Attendance Started!", "success");
+                
             } catch (error) {
-                console.error(error); alert("Error starting session");
+                console.error(error); showToast("Error starting session", "error");
+            } finally {
+                btnStartSession.innerHTML = "Show QR Code";
+                btnStartSession.disabled = false;
             }
         });
     }
 
-    function startCountdown(secondsLeft, sessionId) {
-        const interval = setInterval(async () => {
-            const minutes = Math.floor(secondsLeft / 60);
-            const seconds = secondsLeft % 60;
-            timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            secondsLeft--;
+    function startSessionLogic(initialToken) {
+        let timeLeft = 300; // 5 Minutes
+        qrTimerDisplay.innerText = "05:00";
+        drawQRCode(activeSessionId, initialToken);
 
-            if (secondsLeft < 0) {
-                clearInterval(interval);
-                timerDisplay.innerText = "00:00";
-                await updateDoc(doc(db, "attendance_sessions", sessionId), { isActive: false });
-                alert("Attendance Session has ended.");
-                activeSessionAlert.classList.add("hidden");
+        // Countdown Timer
+        countdownInterval = setInterval(async () => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            qrTimerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timeLeft <= 0) {
+                endSession(); 
             }
         }, 1000);
+
+        // Dynamic QR Refresh (Every 5 seconds)
+        qrRefreshInterval = setInterval(async () => {
+            if(!activeSessionId) return;
+            const newToken = Math.random().toString(36).substring(2, 10);
+            try {
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), {
+                    currentToken: newToken
+                });
+                drawQRCode(activeSessionId, newToken);
+            } catch(e) { console.log(e); }
+        }, 5000);
+    }
+
+    function drawQRCode(sessionId, token) {
+        qrCodeContainer.innerHTML = ""; 
+        const scanUrl = `https://acet-nexus.onrender.com/scan?session=${sessionId}&token=${token}`;
+        
+        qrcodeObj = new QRCode(qrCodeContainer, {
+            text: scanUrl,
+            width: 250,
+            height: 250,
+            colorDark : "#0f172a",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    }
+
+    async function endSession() {
+        clearInterval(countdownInterval);
+        clearInterval(qrRefreshInterval);
+        qrDisplayModal.classList.add("hidden");
+        
+        if (activeSessionId) {
+            showToast("Attendance Session Closed", "error");
+            try {
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { isActive: false });
+            } catch(e) { console.log(e); }
+        }
+        activeSessionId = null;
+    }
+
+    if (btnCloseQr) {
+        btnCloseQr.addEventListener("click", () => {
+            if (confirm("Are you sure you want to close this QR and end the session early?")) {
+                endSession();
+            }
+        });
     }
 
     // ================= 4. POST ASSIGNMENTS =================
@@ -203,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = document.getElementById("assignTitle").value.trim();
             const dueDate = document.getElementById("assignDue").value;
 
-            if(!selectedVal || !title || !dueDate) return alert("Please fill all details!");
+            if(!selectedVal || !title || !dueDate) return showToast("Please fill all details!", "error");
             const [sectionId, subjectName] = selectedVal.split("|");
 
             try {
@@ -211,13 +291,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     teacherId: currentTeacherId, sectionId: sectionId, subjectName: subjectName, title: title, dueDate: dueDate, postedAt: new Date()
                 });
 
-                alert("Assignment Posted Successfully!");
+                showToast("Assignment Posted Successfully!", "success");
                 assignModal.classList.add("hidden");
                 document.getElementById("assignTitle").value = "";
                 document.getElementById("assignDue").value = "";
                 loadMyPostedAssignments();
             } catch (err) {
-                console.error(err); alert("Failed to post assignment.");
+                console.error(err); showToast("Failed to post assignment.", "error");
             }
         });
     }
@@ -314,7 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const studentId = btn.getAttribute("data-studentid");
                 const remarkText = document.getElementById(`remark-${subId}`).value.trim();
 
-                if(!remarkText) return alert("Please type a remark before saving.");
+                if(!remarkText) return showToast("Please type a remark before saving.", "error");
 
                 try {
                     await addDoc(collection(db, "remarks"), {
@@ -326,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     btn.classList.replace("hover:bg-emerald-600", "hover:bg-slate-300");
                     btn.disabled = true;
                 } catch(err) {
-                    console.error(err); alert("Failed to send remark.");
+                    console.error(err); showToast("Failed to send remark.", "error");
                 }
             }
         });

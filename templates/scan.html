@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scan.css') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<section class="scan-container">
+    
+    <div class="absolute top-6 w-full px-6 flex justify-between items-center z-50">
+        <button onclick="history.back()" class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white backdrop-blur-md hover:bg-white/20 transition">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+        <div class="bg-brand/20 border border-brand/30 px-4 py-1.5 rounded-full backdrop-blur-md">
+            <p class="text-xs font-bold text-emerald-400 tracking-widest uppercase"><i class="fa-solid fa-satellite-dish animate-pulse mr-1"></i> Live Scanner</p>
+        </div>
+    </div>
+
+    <div id="scannerView" class="w-full px-6 flex flex-col items-center">
+        <h2 class="text-2xl font-black mb-2 text-white">Scan QR Code</h2>
+        <p class="text-slate-400 text-sm mb-8 text-center max-w-xs">Point your camera at the Professor's screen to mark attendance.</p>
+        <div id="reader"></div>
+    </div>
+
+    <div id="statusView" class="hidden w-full px-6 flex flex-col items-center">
+        <div class="status-box" id="statusBox">
+            </div>
+        <button id="btnDashboard" class="mt-8 bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-xl backdrop-blur-md transition shadow-lg hidden">
+            Go to Dashboard
+        </button>
+    </div>
+
+</section>
+
+<script type="module" src="{{ url_for('static', filename='js/scan.js') }}"></script>
+{% endblock %}

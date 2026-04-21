@@ -68,6 +68,10 @@ def student_dashboard():
 def profile():
     return render_template('profile.html', show_links=False, show_login=False)
 
+@app.route('/scan')
+def scan():
+    return render_template('scan.html', show_links=False, show_login=False)
+
 # ==========================================
 # 🔐 OTP BACKEND LOGIC
 # ==========================================
