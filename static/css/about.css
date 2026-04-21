@@ -148,3 +148,34 @@
     color: black;
 }
 
+/* ================= MOBILE VIEW (ABOUT) ================= */
+@media (max-width: 768px) {
+    .about-section {
+        padding: 80px 20px;
+    }
+    .about-text h1 {
+        font-size: 2.8rem;
+    }
+    .top-text-box {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    .image-box img {
+        width: 100%;
+        mask-image: none;
+        -webkit-mask-image: none;
+        margin-top: 20px;
+    }
+    .about-cards {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .cards {
+        width: 100%;
+    }
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr); /* 4 ki jagah 2 columns */
+        gap: 20px;
+    }
+}

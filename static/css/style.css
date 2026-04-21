@@ -245,3 +245,52 @@ html, body, * {
     backdrop-filter: blur(8px);
     background-color: rgba(15, 23, 42, 0.6);
 }
+
+/* ================= MOBILE VIEW (GLOBAL & NAVBAR) ================= */
+@media (max-width: 768px) {
+    /* Mobile par Snap Scroll hata rahe hain taaki lamba content kate nahi */
+    html {
+        scroll-snap-type: none; 
+    }
+    section {
+        scroll-snap-align: none;
+        height: auto; 
+        min-height: 100vh;
+        padding-top: 100px; /* Navbar overlap fix */
+    }
+    
+    /* Navbar Mobile Layout */
+    .custom-navbar .container-fluid {
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    /* Show 3 bars */
+    #hamburgerBtn {
+        display: block !important;
+    }
+
+    /* Hide Links initially & Convert to Dropdown */
+    .nav-center {
+        display: none;
+        position: absolute;
+        top: 80px;
+        left: 0;
+        width: 100%;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 20px 0;
+        text-align: center;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    
+    /* When clicked */
+    .nav-center.active {
+        display: block;
+    }
+    
+    .nav-links {
+        flex-direction: column;
+        gap: 20px;
+    }
+}

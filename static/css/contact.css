@@ -125,3 +125,18 @@
     transform: translateY(-2px);
     background: black;
 }
+
+/* ================= MOBILE VIEW (CONTACT) ================= */
+@media (max-width: 768px) {
+    .contact-section {
+        padding: 80px 20px;
+        max-height: none; /* Form overflow fix */
+    }
+    .contact-box {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .contact-info, .contact-form {
+        width: 100%;
+    }
+}

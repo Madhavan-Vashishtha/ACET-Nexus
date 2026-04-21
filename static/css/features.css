@@ -112,3 +112,30 @@
     font-size: 1.1rem;
 }
 
+/* ================= MOBILE VIEW (FEATURES) ================= */
+@media (max-width: 768px) {
+    .features-container {
+        flex-direction: column-reverse; /* Box upar, links neeche */
+        padding: 80px 20px 20px;
+    }
+    .features-left, .features-right {
+        width: 100%;
+    }
+    .feature-box {
+        width: 100%;
+        padding: 40px 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        mask-image: none;
+        -webkit-mask-image: none; /* Mobile par mask hataya taaki text pura dikhe */
+    }
+    .feature-box h1 {
+        font-size: 2.5rem;
+    }
+    .quick-links-container {
+        gap: 15px;
+    }
+    .quick-item img {
+        width: 50px; /* Icons thode chote kiye */
+    }
+}
