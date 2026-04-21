@@ -94,29 +94,31 @@
     width: 100%;
     max-width: 500px;
 }
-
-/* ================= MOBILE VIEW (HOME) ================= */
-@media (max-width: 768px) {
+/* ================= MOBILE & TABLET VIEW (HOME) ================= */
+@media (max-width: 992px) {
+    .hero-section {
+        height: auto;
+        min-height: 100vh;
+        padding: 100px 20px 40px;
+    }
     .hero-content {
         flex-direction: column;
         text-align: center;
         justify-content: center;
-        margin-top: 40px;
-    }
-    .hero-text {
-        max-width: 100%;
+        height: 100%;
     }
     .hero-text h1 {
-        font-size: 2.8rem; /* Font bada */
+        font-size: 2.3rem; /* Font chota kiya */
     }
     .hero-text p {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
     .hero-buttons {
         justify-content: center;
         margin-bottom: 30px;
     }
     .hero-image img {
-        width: 90%; /* Image adjusted */
+        width: 100%;
+        max-width: 320px;
     }
 }

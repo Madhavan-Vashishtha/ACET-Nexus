@@ -111,31 +111,37 @@
     margin-bottom: 25px;
     font-size: 1.1rem;
 }
-
-/* ================= MOBILE VIEW (FEATURES) ================= */
-@media (max-width: 768px) {
+/* ================= MOBILE & TABLET VIEW (FEATURES) ================= */
+@media (max-width: 992px) {
+    .feature-section {
+        height: auto;
+        min-height: 100vh;
+    }
     .features-container {
-        flex-direction: column-reverse; /* Box upar, links neeche */
-        padding: 80px 20px 20px;
+        flex-direction: column-reverse;
+        padding: 80px 20px 40px;
+        align-items: center;
     }
     .features-left, .features-right {
         width: 100%;
     }
     .feature-box {
         width: 100%;
-        padding: 40px 20px;
+        padding: 30px 20px;
         margin-bottom: 30px;
         text-align: center;
         mask-image: none;
-        -webkit-mask-image: none; /* Mobile par mask hataya taaki text pura dikhe */
+        -webkit-mask-image: none;
     }
     .feature-box h1 {
-        font-size: 2.5rem;
+        font-size: 2.3rem;
+    }
+    .feature-box p {
+        font-size: 1rem;
     }
     .quick-links-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns perfect rahenge */
         gap: 15px;
     }
-    .quick-item img {
-        width: 50px; /* Icons thode chote kiye */
-    }
+    .quick-item img { width: 50px; }
 }

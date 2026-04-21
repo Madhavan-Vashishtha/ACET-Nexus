@@ -245,52 +245,59 @@ html, body, * {
     backdrop-filter: blur(8px);
     background-color: rgba(15, 23, 42, 0.6);
 }
-
-/* ================= MOBILE VIEW (GLOBAL & NAVBAR) ================= */
-@media (max-width: 768px) {
-    /* Mobile par Snap Scroll hata rahe hain taaki lamba content kate nahi */
+/* ================= MOBILE & TABLET VIEW (GLOBAL & NAVBAR) ================= */
+@media (max-width: 992px) {
+    /* Snap Scroll Wapas Laya */
     html {
-        scroll-snap-type: none; 
+        scroll-snap-type: y mandatory;
     }
     section {
-        scroll-snap-align: none;
-        height: auto; 
-        min-height: 100vh;
-        padding-top: 100px; /* Navbar overlap fix */
+        min-height: 100vh; /* height:100vh nahi, taaki lamba content na kate */
+        height: auto;
+        padding-top: 90px; /* Navbar ke neeche dabne se rokega */
     }
     
-    /* Navbar Mobile Layout */
+    /* Navbar Layout Fix (Ek line mein force karna) */
     .custom-navbar .container-fluid {
-        display: flex;
+        display: flex !important;
         justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap; /* Tute nahi isliye */
     }
     
-    /* Show 3 bars */
+    .nav-left { flex: 1; }
+    .logo-text { font-size: 22px; } /* Logo thoda chota kiya space ke liye */
+    
+    /* Login & Hamburger ko ek saath fix kiya */
+    .nav-right {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .login-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    
     #hamburgerBtn {
         display: block !important;
     }
 
-    /* Hide Links initially & Convert to Dropdown */
+    /* Mobile Menu Dropdown */
     .nav-center {
         display: none;
         position: absolute;
-        top: 80px;
+        top: 75px;
         left: 0;
         width: 100%;
-        background: rgba(15, 23, 42, 0.95);
+        background: rgba(15, 23, 42, 0.98);
         backdrop-filter: blur(10px);
         padding: 20px 0;
         text-align: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
     
-    /* When clicked */
-    .nav-center.active {
-        display: block;
-    }
-    
-    .nav-links {
-        flex-direction: column;
-        gap: 20px;
-    }
+    .nav-center.active { display: block; }
+    .nav-links { flex-direction: column; gap: 20px; }
 }

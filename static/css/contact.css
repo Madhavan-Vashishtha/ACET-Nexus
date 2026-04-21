@@ -125,12 +125,12 @@
     transform: translateY(-2px);
     background: black;
 }
-
-/* ================= MOBILE VIEW (CONTACT) ================= */
-@media (max-width: 768px) {
+/* ================= MOBILE & TABLET VIEW (CONTACT) ================= */
+@media (max-width: 992px) {
     .contact-section {
-        padding: 80px 20px;
-        max-height: none; /* Form overflow fix */
+        min-height: 100vh;
+        max-height: none;
+        padding: 80px 20px 40px;
     }
     .contact-box {
         flex-direction: column;
@@ -139,4 +139,5 @@
     .contact-info, .contact-form {
         width: 100%;
     }
+    .contact-text h1 { font-size: 2.3rem; }
 }
