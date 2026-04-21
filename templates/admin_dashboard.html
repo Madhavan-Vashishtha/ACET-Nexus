@@ -203,7 +203,7 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 1. PRO MOBILE MENU & CROSS 'X' BUTTON LOGIC
+        // 🔥 PRO MOBILE MENU LOGIC
         const aside = document.querySelector("aside");
         
         if (window.innerWidth <= 992 && aside) {
@@ -212,10 +212,9 @@
             closeMenuBtn.className = "absolute top-6 right-6 text-white text-3xl font-black bg-white/10 w-12 h-12 rounded-full flex items-center justify-center hover:bg-white/20 z-50";
             aside.appendChild(closeMenuBtn);
             
-            // Fix: Let browser back-button handle closing so history stays clean
             closeMenuBtn.addEventListener("click", () => {
                 if(history.state && history.state.menuOpen) {
-                    history.back(); // Triggers popstate, which cleanly closes menu
+                    history.back(); 
                 } else {
                     aside.classList.remove("menu-open");
                     document.body.style.overflow = "auto";
@@ -262,20 +261,18 @@
             }
         }
 
-        // 🔥 2. AUTO-CLOSE MENU ON TAB CLICK
+        // 🔥 AUTO-CLOSE MENU ON TAB CLICK
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                     aside.classList.remove("menu-open");
                     document.body.style.overflow = "auto";
                     if(history.state && history.state.menuOpen) {
-                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); // Replace menu state
+                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); 
                     }
                 }
             });
         });
-
-
 
         // 🔥 BROWSER BACK BUTTON PRO-LOGIC
         history.replaceState({ tab: 'view-overview' }, ""); 
@@ -293,12 +290,11 @@
                 document.getElementById('view-overview').classList.add('active');
                 history.pushState({ tab: 'view-overview' }, ""); 
             } else {
-                // 🔥 Default tab se back kiya to seedha Home bhej diya! (No Logout Prompt)
                 window.location.href = "/";
             }
         });
 
-        // 🔥 4. FETCH INBOX MESSAGES REALTIME (BUG FIXED!)
+        // 🔥 FETCH INBOX MESSAGES REALTIME
         const inboxModal = document.getElementById("inboxModal");
         const btnOpenInbox = document.getElementById("btnOpenInbox");
         const btnCloseInbox = document.getElementById("btnCloseInbox");
@@ -315,7 +311,6 @@
                 document.body.style.overflow = "auto";
             });
 
-            // Firebase Listener for Messages
             const messagesQuery = query(collection(db, "contact_messages"), orderBy("timestamp", "desc"));
             onSnapshot(messagesQuery, (snapshot) => {
                 inboxMessagesList.innerHTML = "";

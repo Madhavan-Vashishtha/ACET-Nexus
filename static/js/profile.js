@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { doc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const profEmail = document.getElementById("profEmail");
     const profPhone = document.getElementById("profPhone");
     const profDob = document.getElementById("profDob");
-    const profSection = document.getElementById("profSection"); // 🔥 Added
+    const profSection = document.getElementById("profSection"); 
     const profAddress = document.getElementById("profAddress");
     const profBio = document.getElementById("profBio");
     const profPicUrl = document.getElementById("profPicUrl");
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSaveProfile = document.getElementById("btnSaveProfile");
     const btnBackToDashboard = document.getElementById("btnBackToDashboard");
 
-    // 🔥 Added profSection to completion fields
+    // Completion Array
     const completionFields = [profName, profEmail, profPhone, profDob, profSection, profAddress, profBio, profPicUrl];
 
     function updateCompletion() {
@@ -56,11 +56,21 @@ document.addEventListener("DOMContentLoaded", () => {
         field.addEventListener("input", updateCompletion);
     });
 
+    // 1. Auth & Data Fetch
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUserId = user.uid;
             
             try {
+                // 🔥 Fetch active sections FIRST
+                const secSnap = await getDocs(collection(db, "sections"));
+                profSection.innerHTML = '<option value="" disabled selected>-- Select Section --</option>';
+                secSnap.forEach(s => {
+                    const sName = s.data().name; 
+                    profSection.innerHTML += `<option value="${sName}">${sName}</option>`;
+                });
+
+                // Ab user ka data fetch hoga
                 const userDoc = await getDoc(doc(db, "users", currentUserId));
                 
                 if(userDoc.exists()) {
@@ -71,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     profEmail.value = data.email || user.email;
                     if(data.phone) profPhone.value = data.phone;
                     if(data.dob) profDob.value = data.dob;
-                    if(data.section) profSection.value = data.section; // 🔥 Load section
+                    if(data.section) profSection.value = data.section; 
                     if(data.address) profAddress.value = data.address;
                     if(data.bio) profBio.value = data.bio;
                     
@@ -101,7 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         roleBadge.className = "bg-indigo-100 text-brand px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-200";
                         idLabel.innerText = "Enrollment No";
                         profEnrollment.innerText = data.enrollment || "STU-" + Math.floor(10000 + Math.random() * 90000);
-                        // 🔥 Show actual section from DB in the card header
                         profDepartment.innerText = data.section ? `Sec: ${data.section}` : "Please Update Section";
                     }
 
@@ -115,6 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // 2. Real-time Avatar Preview
     profPicUrl.addEventListener("input", (e) => {
         const newUrl = e.target.value.trim();
         if(newUrl) {
@@ -124,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // 3. Save Profile Updates
     btnSaveProfile.addEventListener("click", async () => {
         const originalText = btnSaveProfile.innerHTML;
         btnSaveProfile.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
@@ -132,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const userRef = doc(db, "users", currentUserId);
             
-            // 🔥 Save section to DB
             await updateDoc(userRef, {
                 phone: profPhone.value.trim(),
                 dob: profDob.value,
@@ -145,7 +155,6 @@ document.addEventListener("DOMContentLoaded", () => {
             btnSaveProfile.className = "bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_4px_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-sm md:text-base w-full md:w-auto";
             btnSaveProfile.innerHTML = `<i class="fa-solid fa-check"></i> Saved Successfully`;
             
-            // Update the top card text immediately
             if(currentUserRole === 'student') {
                 profDepartment.innerText = `Sec: ${profSection.value.trim().toUpperCase()}`;
             }
@@ -164,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } 
     });
 
+    // 4. Back to Dashboard
     btnBackToDashboard.addEventListener("click", () => {
         if (!currentUserRole) return window.location.href = "/";
         if (currentUserRole === 'admin') window.location.href = "/admin-dashboard";
