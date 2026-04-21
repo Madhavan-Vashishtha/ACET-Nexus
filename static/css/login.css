@@ -339,3 +339,51 @@
 .suggestion:hover {
     text-decoration: underline;
 }
+
+/* ================= MOBILE & TABLET VIEW (LOGIN PAGE) ================= */
+@media (max-width: 992px) {
+    .login-section {
+        padding: 20px;
+    }
+    
+    .login-section .container {
+        width: 100%;
+        height: auto;
+        min-height: 600px; /* Mobile par thodi zyada jagah chahiye */
+    }
+    
+    /* 🔥 1. Welcome Overlay ko gayab kar diya */
+    .login-section .overlay-container {
+        display: none;
+    }
+    
+    /* 🔥 2. Forms ko 100% width de di */
+    .login-section .sign-in-container,
+    .login-section .sign-up-container {
+        width: 100%;
+        left: 0;
+        padding: 40px 0;
+    }
+    
+    .login-section form {
+        padding: 0 25px; /* Side padding kam ki */
+    }
+    
+    /* 🔥 3. Sliding Animation ki jagah In-place Fade effect */
+    .login-section .sign-up-container {
+        transform: translateX(0); 
+    }
+    
+    .login-section .container.right-panel-active .sign-up-container {
+        transform: translateX(0); /* Slide hone se roka */
+        opacity: 1;
+        z-index: 5;
+    }
+    
+    .login-section .container.right-panel-active .sign-in-container {
+        transform: translateX(0); /* Slide hone se roka */
+        opacity: 0;
+        z-index: 1;
+        pointer-events: none; /* Taki invisible form ke buttons click na ho jayein */
+    }
+}

@@ -21,9 +21,12 @@
             {% if show_login %}
             <a href="{{url_for('login')}}" class="login-btn">Login</a>
             {% endif %}
+            
+            {% if show_links %}
             <button class="menu-toggle" id="hamburgerBtn" style="background: none; border: none; cursor: pointer; display: none;">
                 <img src="https://cdn-icons-png.flaticon.com/128/5013/5013230.png" width="30" alt="menu" style="filter: invert(1);">
             </button>
+            {% endif %}
         </div>
 
     </div>
