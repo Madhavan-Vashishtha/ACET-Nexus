@@ -130,14 +130,27 @@
     .contact-section {
         min-height: 100vh;
         max-height: none;
-        padding: 80px 20px 40px;
+        padding: 70px 18px 35px; /* ~10% Reduced */
     }
     .contact-box {
         flex-direction: column;
-        gap: 20px;
+        gap: 18px; /* Reduced gap */
     }
     .contact-info, .contact-form {
         width: 100%;
+        padding: 15px; /* Reduced padding */
     }
-    .contact-text h1 { font-size: 2.3rem; }
+    .contact-text h1 { font-size: 2rem; } /* Reduced */
+    .contact-text p { font-size: 0.9rem; }
+    
+    .contact-info h2, .contact-form h2 { font-size: 1.3rem; } /* Reduced H2 */
+    
+    /* Input size reduction */
+    .contact-form input, .contact-form textarea {
+        padding: 10px; /* Reduced from 12px/6px */
+        font-size: 13px; /* Reduced */
+    }
+    .contact-form button {
+        font-size: 14px; /* Reduced */
+    }
 }

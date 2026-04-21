@@ -13,6 +13,8 @@ section {
 body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
+    overflow-x: hidden; /* Prevent layout shift */
+    width: 100vw;
 }
 
 /* NAVBAR */
@@ -252,33 +254,33 @@ html, body, * {
         scroll-snap-type: y mandatory;
     }
     section {
-        min-height: 100vh; /* height:100vh nahi, taaki lamba content na kate */
+        min-height: 100vh;
         height: auto;
-        padding-top: 90px; /* Navbar ke neeche dabne se rokega */
+        padding-top: 80px; /* Reduced by 10% */
     }
     
-    /* Navbar Layout Fix (Ek line mein force karna) */
+    /* Navbar Layout Fix */
     .custom-navbar .container-fluid {
         display: flex !important;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: nowrap; /* Tute nahi isliye */
+        flex-wrap: nowrap; 
     }
     
     .nav-left { flex: 1; }
-    .logo-text { font-size: 22px; } /* Logo thoda chota kiya space ke liye */
+    .logo-text { font-size: 19px; } /* ~10% Reduced */
+    .logo-img { width: 35px; height: 35px; } /* Slightly smaller logo */
     
-    /* Login & Hamburger ko ek saath fix kiya */
     .nav-right {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
+        gap: 8px; /* Reduced gap */
     }
     
     .login-btn {
-        padding: 8px 16px;
-        font-size: 14px;
+        padding: 7px 14px; /* ~10% Reduced */
+        font-size: 13px; /* Reduced */
     }
     
     #hamburgerBtn {
@@ -289,15 +291,15 @@ html, body, * {
     .nav-center {
         display: none;
         position: absolute;
-        top: 75px;
+        top: 68px; /* Adjusted for smaller navbar */
         left: 0;
         width: 100%;
         background: rgba(15, 23, 42, 0.98);
         backdrop-filter: blur(10px);
-        padding: 20px 0;
+        padding: 18px 0; /* Reduced */
         text-align: center;
     }
     
     .nav-center.active { display: block; }
-    .nav-links { flex-direction: column; gap: 20px; }
+    .nav-links { flex-direction: column; gap: 18px; } /* Reduced gap */
 }
