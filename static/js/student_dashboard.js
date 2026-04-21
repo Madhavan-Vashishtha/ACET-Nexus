@@ -390,3 +390,100 @@ document.addEventListener("DOMContentLoaded", () => {
         else signOut(auth).then(() => window.location.href = "/login");
     });
 });
+
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { collection, query, where, getDocs, doc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+    let currentStudentId = null;
+    let currentStudentSection = null;
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentStudentId = user.uid;
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists() && userDoc.data().role === "student") {
+                currentStudentSection = userDoc.data().section;
+                
+                // Fetch & Calculate Everything
+                calculateAttendance();
+                fetchRecentLogs();
+                setupEditableTarget();
+            }
+        }
+    });
+
+    async function calculateAttendance() {
+        if(!currentStudentSection) return;
+
+        // 1. Total Lectures Conducted for this Section
+        const sessionsQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection));
+        const sessionsSnap = await getDocs(sessionsQ);
+        const totalLectures = sessionsSnap.size;
+
+        // 2. Total Attended by this Student
+        const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId));
+        const marksSnap = await getDocs(marksQ);
+        const totalAttended = marksSnap.size;
+
+        // Update UI
+        document.getElementById("statTotalClasses").innerText = totalLectures; // HTML id adjust kar lena
+        
+        let percentage = 0;
+        if(totalLectures > 0) {
+            percentage = Math.round((totalAttended / totalLectures) * 100);
+        }
+        document.getElementById("statOverallAtt").innerText = percentage + "%";
+    }
+
+    async function fetchRecentLogs() {
+        const logsContainer = document.getElementById("recentActivityContainer"); // Add this ID to your HTML log div
+        const q = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+
+        if(snapshot.empty) {
+            logsContainer.innerHTML = "<p class='text-slate-400'>No attendance logs found.</p>";
+            return;
+        }
+
+        logsContainer.innerHTML = "";
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const date = new Date(data.timestamp.toDate()).toLocaleString();
+            logsContainer.innerHTML += `
+                <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
+                        <div>
+                            <p class="font-bold text-slate-800">${data.subject}</p>
+                            <p class="text-xs text-slate-500">${date}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">PRESENT</span>
+                </div>
+            `;
+        });
+    }
+
+    // Editable Target System
+    function setupEditableTarget() {
+        const targetText = document.getElementById("targetText"); // The 75% text inside pie chart
+        const savedTarget = localStorage.getItem(`target_${currentStudentId}`) || 75;
+        targetText.innerText = savedTarget + "%";
+
+        targetText.parentElement.style.cursor = "pointer";
+        targetText.parentElement.title = "Click to Edit Target";
+        
+        targetText.parentElement.addEventListener("click", () => {
+            let newTarget = prompt("Set your target attendance percentage (0-100):", savedTarget);
+            if(newTarget !== null && !isNaN(newTarget) && newTarget >= 0 && newTarget <= 100) {
+                localStorage.setItem(`target_${currentStudentId}`, newTarget);
+                targetText.innerText = newTarget + "%";
+                // Optionally update UI circle stroke here
+            } else if (newTarget !== null) {
+                alert("Please enter a valid number between 0 and 100.");
+            }
+        });
+    }
+});

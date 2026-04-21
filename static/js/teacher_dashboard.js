@@ -417,4 +417,40 @@ document.addEventListener("DOMContentLoaded", () => {
         if(isViewOnly) window.close(); 
         else signOut(auth).then(() => window.location.href = "/login");
     });
+
+    // ================= NEW: LOAD MY STUDENTS =================
+    async function loadMyStudents() {
+        const studentContainer = document.querySelector("#view-students .bg-white");
+        if(myAllocatedClasses.length === 0) {
+            studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No sections allocated to you yet.</p>";
+            return;
+        }
+
+        // Get all section IDs this teacher teaches
+        const mySections = myAllocatedClasses.map(c => c.sectionId);
+        
+        // Fetch students who belong to these sections
+        const q = query(collection(db, "users"), where("role", "==", "student"), where("section", "in", mySections));
+        const snapshot = await getDocs(q);
+
+        if(snapshot.empty) {
+            studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
+            return;
+        }
+
+        let html = `<table class="w-full text-left"><thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">Student Name</th><th class="px-6 py-4">Section</th><th class="px-6 py-4">Email</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            html += `<tr>
+                <td class="px-6 py-4 font-bold text-slate-800"><i class="fa-solid fa-user text-brand/50 mr-2"></i> ${data.name}</td>
+                <td class="px-6 py-4 font-bold text-brand">${data.section}</td>
+                <td class="px-6 py-4 text-slate-500 text-xs">${data.email}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        studentContainer.innerHTML = html;
+    }
+
+    // Call loadMyStudents() right after loadMyClasses() finishes inside loadTeacherData()
 });

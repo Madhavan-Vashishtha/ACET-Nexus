@@ -72,15 +72,15 @@
                 <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">System Overview</h1>
                 
                 <div class="grid grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up">
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up cursor-pointer" onclick="document.querySelector('[data-target=view-students]').click()">
                         <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand text-2xl"><i class="fa-solid fa-user-graduate"></i></div>
                         <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Students</p><p class="text-3xl font-black text-slate-800" id="statStudents">0</p></div>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100">
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100 cursor-pointer" onclick="document.querySelector('[data-target=view-teachers]').click()">
                         <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 text-2xl"><i class="fa-solid fa-chalkboard-user"></i></div>
                         <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Teachers</p><p class="text-3xl font-black text-slate-800" id="statTeachers">0</p></div>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100">
+                    <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-5 hover:-translate-y-1 transition-transform animate-fade-in-up delay-100 cursor-pointer" onclick="document.querySelector('[data-target=view-sections]').click()">
                         <div class="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-2xl"><i class="fa-solid fa-layer-group"></i></div>
                         <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Sections</p><p class="text-3xl font-black text-slate-800" id="statClasses">0</p></div>
                     </div>
@@ -91,11 +91,13 @@
                 </div>
 
                 <div class="grid grid-cols-3 gap-8">
-                    <div class="col-span-2 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 animate-fade-in-up delay-200">
-                        <h2 class="font-bold text-lg text-slate-800 mb-6">System Wide Attendance</h2>
-                        <div class="h-64 flex items-center justify-center w-full"><canvas id="adminChart"></canvas></div>
+                    <div class="col-span-2 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 animate-fade-in-up delay-200 flex flex-col h-[400px]">
+                        <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Active Sessions</h2>
+                        <div id="adminRecentSessions" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                            <p class="text-slate-400 text-sm">Fetching active class sessions...</p>
+                        </div>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col h-full animate-fade-in-up delay-200">
+                    <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col h-[400px] animate-fade-in-up delay-200">
                         <h2 class="font-bold text-lg text-slate-800 mb-4 border-b border-slate-50 pb-3">Recent Allocations</h2>
                         <div id="allocationsContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
                     </div>
