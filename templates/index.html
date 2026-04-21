@@ -172,11 +172,11 @@
                 <p>Reach out for support, queries, or feedback.</p>
                 <div class="info-item">
                     <img src="https://cdn-icons-png.flaticon.com/128/10308/10308979.png">
-                    <p>jkhush2004@gmail.com</p>
+                    <a href="mailto:jkhush2004@gmail.com" style="text-decoration: none; color: inherit; font-weight: 500;">jkhush2004@gmail.com</a>
                 </div>
                 <div class="info-item">
                     <img src="https://cdn-icons-png.flaticon.com/128/3616/3616215.png">
-                    <p>+91 74558 46761</p>
+                    <a href="tel:+917455846761" style="text-decoration: none; color: inherit; font-weight: 500;">+91 74558 46761</a>
                 </div>
                 <div class="info-item">
                     <img src="https://cdn-icons-png.flaticon.com/128/684/684908.png">
@@ -186,16 +186,47 @@
 
             <div class="contact-form">
                 <h2>Send Message</h2>
-                <form>
-                    <input type="text" placeholder="Your Name">
-                    <input type="email" placeholder="Your Email">
-                    <input type="text" placeholder="Subject">
-                    <textarea placeholder="Your Message"></textarea>
-                    <button type="submit">Send Message</button>
+                <form id="contactForm">
+                    <input type="text" id="contactName" placeholder="Your Name" required>
+                    <input type="email" id="contactEmail" placeholder="Your Email" required>
+                    <input type="text" id="contactSubject" placeholder="Subject (Optional)">
+                    <textarea id="contactMsg" placeholder="Your Message" required></textarea>
+                    <button type="submit" id="btnContactSubmit">Send Message</button>
                 </form>
             </div>
         </div>
     </div>
 </section>
+
+<script type="module">
+    import { db } from "./static/js/firebase.js";
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { showToast } from "./static/js/toast.js";
+
+    document.getElementById("contactForm").addEventListener("submit", async (e) => {
+        e.preventDefault(); // Page refresh roko
+        const btn = document.getElementById("btnContactSubmit");
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending...`;
+        btn.disabled = true;
+
+        try {
+            await addDoc(collection(db, "contact_messages"), {
+                name: document.getElementById("contactName").value,
+                email: document.getElementById("contactEmail").value,
+                subject: document.getElementById("contactSubject").value || "No Subject",
+                message: document.getElementById("contactMsg").value,
+                status: "unread",
+                timestamp: serverTimestamp()
+            });
+            showToast("Message sent successfully! We'll reply soon.", "success");
+            document.getElementById("contactForm").reset();
+        } catch (error) {
+            showToast("Failed to send message. Try again.", "error");
+        } finally {
+            btn.innerHTML = "Send Message";
+            btn.disabled = false;
+        }
+    });
+</script>
 
 {% endblock %}

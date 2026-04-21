@@ -1,11 +1,14 @@
 import { auth, db } from "./firebase.js";
+// 🔥 Toast import kiya (Make sure toast.js exist karti ho)
+import { showToast } from "./toast.js"; 
 
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  signOut
+  signOut,
+  sendPasswordResetEmail // 🔥 Import added for Forgot Password
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -38,7 +41,6 @@ const regConfirmError = document.getElementById("regConfirmError");
 const customUsername = document.getElementById("customUsername");
 
 const registerBtn = document.getElementById("finalRegister");
-
 
 // ================= PASSWORD RULE =================
 const PWD_RULE = {
@@ -120,7 +122,6 @@ const btnSendOtp = document.getElementById("btnSendOtp");
 const otpBox = document.getElementById("otpBox");
 const btnVerifyOtp = document.getElementById("btnVerifyOtp");
 const usernameStep = document.getElementById("usernameStep");
-const signupFormInputs = document.querySelectorAll(".sign-up-container form > .input-group:not(#usernameGroup, #usernameStep .input-group)");
 
 if(btnSendOtp) {
     btnSendOtp.addEventListener("click", async () => {
@@ -148,13 +149,15 @@ if(btnSendOtp) {
             if(data.success) {
                 btnSendOtp.style.display = "none";
                 otpBox.style.display = "block";
+                showToast("OTP sent to your email!", "success"); // 🔥 Using Toast
             } else {
-                alert(data.message);
+                showToast(data.message, "error"); // 🔥 Using Toast
                 btnSendOtp.innerText = "Send OTP";
                 btnSendOtp.disabled = false;
             }
         } catch(e) {
-            console.error(e); alert("Network error.");
+            console.error(e); 
+            showToast("Network error.", "error");
             btnSendOtp.innerText = "Send OTP";
             btnSendOtp.disabled = false;
         }
@@ -179,12 +182,12 @@ if(btnVerifyOtp) {
             
             const data = await res.json();
             if(data.success) {
-                // Hide complete step 1 and show step 2
                 document.getElementById("step1").style.display = "none";
                 document.getElementById("usernameStep").style.display = "block";
                 
                 let suffix = window.getSuffix(roleSelect.value);
                 document.getElementById("usernameGroup").setAttribute("data-suffix", suffix);
+                showToast("OTP Verified!", "success");
             } else {
                 document.getElementById("otpError").innerText = "Invalid OTP!";
                 btnVerifyOtp.innerText = "Verify & Continue";
@@ -195,7 +198,7 @@ if(btnVerifyOtp) {
     });
 }
 
-// ================= FINAL REGISTER (WITH PENDING) =================
+// ================= FINAL REGISTER =================
 if (registerBtn) {
   registerBtn.addEventListener("click", async () => {
     if (password.value !== confirmPassword.value) {
@@ -205,7 +208,10 @@ if (registerBtn) {
     }
 
     let username = customUsername.value.trim() + window.getSuffix(roleSelect.value);
-    if(!customUsername.value.trim()) return alert("Choose a username");
+    if(!customUsername.value.trim()) {
+        showToast("Choose a username", "error");
+        return;
+    }
 
     registerBtn.disabled = true;
     registerBtn.innerText = "Creating...";
@@ -214,7 +220,6 @@ if (registerBtn) {
         const userCred = await createUserWithEmailAndPassword(auth, email.value.trim().toLowerCase(), password.value);
         const user = userCred.user;
 
-        // Save with "pending" status
         await setDoc(doc(db, "users", user.uid), {
             name: name.value.trim(),
             email: email.value.trim().toLowerCase(),
@@ -224,9 +229,9 @@ if (registerBtn) {
             createdAt: serverTimestamp()
         });
 
-        await signOut(auth); // Sign them out
-        alert("Registration Successful! Your account is pending Admin approval.");
-        window.location.reload();
+        await signOut(auth);
+        showToast("Registration Successful! Pending Admin approval.", "success");
+        setTimeout(() => { window.location.reload(); }, 2000);
 
     } catch (err) {
         regEmailError.innerText = "Registration failed";
@@ -237,7 +242,7 @@ if (registerBtn) {
   });
 }
 
-// ================= LOGIN (WITH APPROVAL CHECK) =================
+// ================= LOGIN =================
 const loginBtn = document.getElementById("loginBtn");
 
 if (loginBtn) {
@@ -270,7 +275,7 @@ if (loginBtn) {
         if(userDoc.exists()) {
             if(userDoc.data().status === "pending") {
                 await signOut(auth);
-                alert("Your account is waiting for Admin Approval.");
+                showToast("Your account is waiting for Admin Approval.", "error");
                 return;
             }
             redirectUser(userDoc.data().role);
@@ -291,13 +296,12 @@ if (googleBtn) {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        // Check if user exists in our DB
         const q = query(collection(db, "users"), where("email", "==", user.email));
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
             await signOut(auth);
-            alert("No account found! Please register manually first.");
+            showToast("No account found! Please register manually first.", "error");
             return;
         }
 
@@ -305,17 +309,38 @@ if (googleBtn) {
 
         if (userData.status === "pending") {
             await signOut(auth);
-            alert("Your account is waiting for Admin Approval.");
+            showToast("Your account is waiting for Admin Approval.", "error");
             return;
         }
 
-        // Success
         redirectUser(userData.role);
 
     } catch (err) {
         console.error(err);
     }
   });
+}
+
+// 🔥 FORGOT PASSWORD LOGIC 🔥
+const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+if (forgotPasswordBtn) {
+    forgotPasswordBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById("loginUsername").value.trim();
+        
+        if (!emailInput || !emailInput.includes("@")) {
+            showToast("Please enter your registered email in the Username box first.", "error");
+            return;
+        }
+
+        try {
+            await sendPasswordResetEmail(auth, emailInput);
+            showToast("Password reset link sent! Check your inbox.", "success");
+        } catch (error) {
+            showToast("Error: Could not send reset link.", "error");
+            console.error(error);
+        }
+    });
 }
 
 function redirectUser(role) {

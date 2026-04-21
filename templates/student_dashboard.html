@@ -203,19 +203,35 @@
                     if (aside.classList.contains("menu-open")) {
                         burgerBtn.innerHTML = '<i class="fa-solid fa-xmark text-white text-2xl"></i>';
                         document.body.style.overflow = "hidden"; // Scroll Lock
+                        history.pushState({ menuOpen: true }, ""); // Fake state for back button
                     } else {
+                        burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
+                        document.body.style.overflow = "auto";
+                        if(history.state && history.state.menuOpen) {
+                            history.back(); // clear fake state
+                        }
+                    }
+                });
+
+                // Catch Physical Back Button
+                window.addEventListener("popstate", () => {
+                    if (aside.classList.contains("menu-open")) {
+                        aside.classList.remove("menu-open");
                         burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
                         document.body.style.overflow = "auto";
                     }
                 });
                 
                 // Close menu when any option is clicked
-                const links = aside.querySelectorAll("button");
-                links.forEach(link => {
+                const dashboardMenuLinks = aside.querySelectorAll("button");
+                dashboardMenuLinks.forEach(link => {
                     link.addEventListener("click", () => {
-                        aside.classList.remove("menu-open");
-                        burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
-                        document.body.style.overflow = "auto";
+                        if (aside.classList.contains("menu-open")) {
+                            aside.classList.remove("menu-open");
+                            burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
+                            document.body.style.overflow = "auto";
+                            history.back(); // Clean history state
+                        }
                     });
                 });
             }
