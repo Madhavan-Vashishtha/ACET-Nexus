@@ -275,31 +275,26 @@
             });
         });
 
-        // 🔥 3. BROWSER BACK BUTTON PRO-LOGIC
+
+
+        // 🔥 BROWSER BACK BUTTON PRO-LOGIC
         history.replaceState({ tab: 'view-overview' }, ""); 
 
         window.addEventListener("popstate", (e) => {
-            // Priority 1: Close menu if open (NO LOGOUT PROMPT HERE)
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
-                return; // Stop function execution immediately
+                return;
             }
 
-            // Priority 2: Tab handling
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id !== 'view-overview') {
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.getElementById('view-overview').classList.add('active');
                 history.pushState({ tab: 'view-overview' }, ""); 
             } else {
-                // Priority 3: Default tab hit -> Logout Prompt
-                const conf = confirm("Are you sure you want to Logout?");
-                if (conf) {
-                    document.getElementById('btnLogout').click();
-                } else {
-                    history.pushState({ tab: 'view-overview' }, ""); 
-                }
+                // 🔥 Default tab se back kiya to seedha Home bhej diya! (No Logout Prompt)
+                window.location.href = "/";
             }
         });
 

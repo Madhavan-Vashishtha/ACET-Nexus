@@ -258,12 +258,8 @@
                 document.getElementById('view-dashboard').classList.add('active');
                 history.pushState({ tab: 'view-dashboard' }, ""); 
             } else {
-                const conf = confirm("Are you sure you want to Logout & Exit?");
-                if (conf) {
-                    document.getElementById('btnLogout').click();
-                } else {
-                    history.pushState({ tab: 'view-dashboard' }, ""); 
-                }
+                // 🔥 Default tab se back kiya to seedha Home bhej diya! (No Logout Prompt)
+                window.location.href = "/";
             }
         });
     });

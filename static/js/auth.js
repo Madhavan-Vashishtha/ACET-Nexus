@@ -1,5 +1,4 @@
 import { auth, db } from "./firebase.js";
-// 🔥 Toast import kiya (Make sure toast.js exist karti ho)
 import { showToast } from "./toast.js"; 
 
 import {
@@ -8,7 +7,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  sendPasswordResetEmail // 🔥 Import added for Forgot Password
+  sendPasswordResetEmail,
+  onAuthStateChanged // 🔥 Added this
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -17,6 +17,13 @@ import {
 
 
 document.addEventListener("DOMContentLoaded", () => {
+
+// 🔥 PRO FIX: Agar user already logged in hai, toh Login page se bhagao!
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        window.location.replace("/"); // Seedha Home, no back history
+    }
+});
 
 window.getSuffix = function(role) {
     if (role === "admin") return "@acet.ad.in";
@@ -44,11 +51,7 @@ const registerBtn = document.getElementById("finalRegister");
 
 // ================= PASSWORD RULE =================
 const PWD_RULE = {
-  min: 8,
-  u_case: /[A-Z]/,
-  l_case: /[a-z]/,
-  num: /[0-9]/,
-  spec: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+  min: 8, u_case: /[A-Z]/, l_case: /[a-z]/, num: /[0-9]/, spec: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
 };
 
 function validatePassword(pwd) {
@@ -61,7 +64,6 @@ function validatePassword(pwd) {
   return errors;
 }
 
-// ================= VALIDATION =================
 function validateName() {
   if (!name.value.trim()) { regNameError.innerText = "Name is required"; return false; }
   regNameError.innerText = ""; return true;
@@ -88,7 +90,6 @@ function validateRole() {
   regRoleError.innerText = ""; return true;
 }
 
-// ================= EMAIL EXIST CHECK =================
 async function checkEmailExists() {
   const val = email.value.trim().toLowerCase();
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,21 +102,13 @@ async function checkEmailExists() {
     regEmailError.innerText = "Email already exists";
     return true;
   }
-  regEmailError.innerText = "";
-  return false;
+  regEmailError.innerText = ""; return false;
 }
 
-// ================= BLUR EVENTS =================
 if (name) name.addEventListener("blur", validateName);
-if (email) {
-  email.addEventListener("blur", async () => {
-    validateEmail();
-    await checkEmailExists();
-  });
-}
+if (email) email.addEventListener("blur", async () => { validateEmail(); await checkEmailExists(); });
 if (password) password.addEventListener("blur", validatePasswordField);
 if (roleSelect) roleSelect.addEventListener("change", validateRole);
-
 
 // ================= REGISTRATION WITH OTP =================
 const btnSendOtp = document.getElementById("btnSendOtp");
@@ -125,41 +118,30 @@ const usernameStep = document.getElementById("usernameStep");
 
 if(btnSendOtp) {
     btnSendOtp.addEventListener("click", async () => {
-        const isNameValid = validateName();
-        const isEmailValid = validateEmail();
-        const isPasswordValid = validatePasswordField();
-        const isRoleValid = validateRole();
+        const isNameValid = validateName(); const isEmailValid = validateEmail();
+        const isPasswordValid = validatePasswordField(); const isRoleValid = validateRole();
 
         if (!isNameValid || !isEmailValid || !isPasswordValid || !isRoleValid) return;
+        const emailExists = await checkEmailExists(); if (emailExists) return;
 
-        const emailExists = await checkEmailExists();
-        if (emailExists) return;
-
-        btnSendOtp.innerText = "Sending...";
-        btnSendOtp.disabled = true;
+        btnSendOtp.innerText = "Sending..."; btnSendOtp.disabled = true;
 
         try {
             const res = await fetch("/send-otp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: email.value.trim().toLowerCase() })
             });
-            
             const data = await res.json();
             if(data.success) {
-                btnSendOtp.style.display = "none";
-                otpBox.style.display = "block";
-                showToast("OTP sent to your email!", "success"); // 🔥 Using Toast
+                btnSendOtp.style.display = "none"; otpBox.style.display = "block";
+                showToast("OTP sent to your email!", "success");
             } else {
-                showToast(data.message, "error"); // 🔥 Using Toast
-                btnSendOtp.innerText = "Send OTP";
-                btnSendOtp.disabled = false;
+                showToast(data.message, "error");
+                btnSendOtp.innerText = "Send OTP"; btnSendOtp.disabled = false;
             }
         } catch(e) {
-            console.error(e); 
             showToast("Network error.", "error");
-            btnSendOtp.innerText = "Send OTP";
-            btnSendOtp.disabled = false;
+            btnSendOtp.innerText = "Send OTP"; btnSendOtp.disabled = false;
         }
     });
 }
@@ -170,21 +152,17 @@ if(btnVerifyOtp) {
         const otp = document.getElementById("regOtp").value.trim();
 
         if(otp.length !== 6) return document.getElementById("otpError").innerText = "Enter valid 6-digit OTP";
-
         btnVerifyOtp.innerText = "Verifying...";
 
         try {
             const res = await fetch("/verify-otp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: emailVal, otp: otp })
             });
-            
             const data = await res.json();
             if(data.success) {
                 document.getElementById("step1").style.display = "none";
                 document.getElementById("usernameStep").style.display = "block";
-                
                 let suffix = window.getSuffix(roleSelect.value);
                 document.getElementById("usernameGroup").setAttribute("data-suffix", suffix);
                 showToast("OTP Verified!", "success");
@@ -192,9 +170,7 @@ if(btnVerifyOtp) {
                 document.getElementById("otpError").innerText = "Invalid OTP!";
                 btnVerifyOtp.innerText = "Verify & Continue";
             }
-        } catch(e) {
-            console.error(e);
-        }
+        } catch(e) { console.error(e); }
     });
 }
 
@@ -203,41 +179,26 @@ if (registerBtn) {
   registerBtn.addEventListener("click", async () => {
     if (password.value !== confirmPassword.value) {
         regConfirmError.innerText = "Passwords do not match"; return;
-    } else {
-        regConfirmError.innerText = "";
-    }
+    } else { regConfirmError.innerText = ""; }
 
     let username = customUsername.value.trim() + window.getSuffix(roleSelect.value);
-    if(!customUsername.value.trim()) {
-        showToast("Choose a username", "error");
-        return;
-    }
+    if(!customUsername.value.trim()) { showToast("Choose a username", "error"); return; }
 
-    registerBtn.disabled = true;
-    registerBtn.innerText = "Creating...";
+    registerBtn.disabled = true; registerBtn.innerText = "Creating...";
 
     try {
         const userCred = await createUserWithEmailAndPassword(auth, email.value.trim().toLowerCase(), password.value);
-        const user = userCred.user;
-
-        await setDoc(doc(db, "users", user.uid), {
-            name: name.value.trim(),
-            email: email.value.trim().toLowerCase(),
-            username: username,
-            role: roleSelect.value,
-            status: "pending", 
-            createdAt: serverTimestamp()
+        await setDoc(doc(db, "users", userCred.user.uid), {
+            name: name.value.trim(), email: email.value.trim().toLowerCase(),
+            username: username, role: roleSelect.value,
+            status: "pending", createdAt: serverTimestamp()
         });
-
         await signOut(auth);
         showToast("Registration Successful! Pending Admin approval.", "success");
         setTimeout(() => { window.location.reload(); }, 2000);
-
     } catch (err) {
         regEmailError.innerText = "Registration failed";
-        console.log(err);
-        registerBtn.disabled = false;
-        registerBtn.innerText = "Create Account";
+        registerBtn.disabled = false; registerBtn.innerText = "Create Account";
     }
   });
 }
@@ -256,7 +217,6 @@ if (loginBtn) {
 
     try {
         let userExists = false;
-
         if (input.includes("@acet")) {
             const q = query(collection(db, "users"), where("username", "==", input));
             const snapshot = await getDocs(q);
@@ -280,9 +240,7 @@ if (loginBtn) {
             }
             redirectUser(userDoc.data().role);
         }
-    } catch (err) {
-        document.getElementById("loginPassError").innerText = "Incorrect Credentials";
-    }
+    } catch (err) { document.getElementById("loginPassError").innerText = "Incorrect Credentials"; }
   });
 }
 
@@ -294,30 +252,18 @@ if (googleBtn) {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        const q = query(collection(db, "users"), where("email", "==", user.email));
+        const q = query(collection(db, "users"), where("email", "==", result.user.email));
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-            await signOut(auth);
-            showToast("No account found! Please register manually first.", "error");
-            return;
+            await signOut(auth); showToast("No account found! Please register manually first.", "error"); return;
         }
-
         const userData = snapshot.docs[0].data();
-
         if (userData.status === "pending") {
-            await signOut(auth);
-            showToast("Your account is waiting for Admin Approval.", "error");
-            return;
+            await signOut(auth); showToast("Your account is waiting for Admin Approval.", "error"); return;
         }
-
         redirectUser(userData.role);
-
-    } catch (err) {
-        console.error(err);
-    }
+    } catch (err) { console.error(err); }
   });
 }
 
@@ -327,33 +273,29 @@ if (forgotPasswordBtn) {
     forgotPasswordBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         const emailInput = document.getElementById("loginUsername").value.trim();
-        
         if (!emailInput || !emailInput.includes("@")) {
             showToast("Please enter your registered email in the Username box first.", "error");
             return;
         }
-
         try {
             await sendPasswordResetEmail(auth, emailInput);
             showToast("Password reset link sent! Check your inbox.", "success");
-        } catch (error) {
-            showToast("Error: Could not send reset link.", "error");
-            console.error(error);
-        }
+        } catch (error) { showToast("Error: Could not send reset link.", "error"); }
     });
 }
 
+// 🔥 PRO FIX: REPLACE() used to clear history so Back button doesn't open Login again
 function redirectUser(role) {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get('redirect');
 
     if (redirectTo === 'home') {
-        window.location.href = "/";
+        window.location.replace("/"); // No history
     } else {
-        if (role === "admin") window.location.href = "/admin-dashboard";
-        else if (role === "student") window.location.href = "/student-dashboard";
-        else if (role === "teacher") window.location.href = "/teacher-dashboard";
-        else window.location.href = "/dashboard";
+        if (role === "admin") window.location.replace("/admin-dashboard");
+        else if (role === "student") window.location.replace("/student-dashboard");
+        else if (role === "teacher") window.location.replace("/teacher-dashboard");
+        else window.location.replace("/dashboard");
     }
 }
 
