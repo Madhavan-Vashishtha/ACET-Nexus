@@ -151,7 +151,7 @@
 @media (max-width: 992px) {
     .about-section {
         min-height: 100vh;
-        padding: 70px 18px 35px; /* ~10% Reduced */
+        padding: 90px 18px 35px; /* ~10% Reduced */
     }
     .about-text h1 { font-size: 2rem; } /* Reduced */
     .about-text p { font-size: 0.9rem; }

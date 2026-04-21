@@ -130,7 +130,7 @@
     .contact-section {
         min-height: 100vh;
         max-height: none;
-        padding: 70px 18px 35px; /* ~10% Reduced */
+        padding: 90px 18px 35px; /* ~10% Reduced */
     }
     .contact-box {
         flex-direction: column;
