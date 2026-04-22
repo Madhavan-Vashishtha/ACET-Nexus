@@ -1,6 +1,7 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, getDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { showToast } from "./toast.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -11,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. TAB SWITCHING (NATIVE APP FEEL) =================
+    // ================= 0. PREMIUM TAB SWITCHING (SMART TRACEBACK) =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
     const defaultTabId = "view-dashboard";
@@ -28,8 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
-            views.forEach(v => { 
-                v.classList.remove("active"); 
+            views.forEach(v => {
+                v.classList.remove("active");
                 v.style.display = "none"; 
             });
 
@@ -37,9 +38,15 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
             const targetView = document.getElementById(targetId);
-            if(targetView) { 
-                targetView.classList.add("active"); 
+            if(targetView) {
+                targetView.classList.add("active");
                 targetView.style.display = "block"; 
+            }
+
+            const aside = document.querySelector("aside");
+            if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                aside.classList.remove("menu-open");
+                document.body.style.overflow = "auto";
             }
 
             if (activeTabId === defaultTabId && targetId !== defaultTabId) {
@@ -50,26 +57,33 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ================= 1. AUTHENTICATE =================
+    // ================= 1. AUTHENTICATE & IMPERSONATION =================
     onAuthStateChanged(auth, async (user) => {
-        if (!user) { 
-            window.location.replace("/login"); 
-            return; 
+        if (!user) {
+            window.location.replace("/login");
+            return;
         }
 
         const loggedInDoc = await getDoc(doc(db, "users", user.uid));
         const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
 
-        if (viewAsId && loggedInRole === "admin") {
-            isViewOnly = true; 
-            currentTeacherId = viewAsId; 
-            setupImpersonationUI(); 
-            await loadTeacherData(viewAsId);
-        } else if (!viewAsId && loggedInRole === "teacher") {
-            currentTeacherId = user.uid; 
-            await loadTeacherData(user.uid);
+        if (viewAsId) {
+            if (loggedInRole === "admin") {
+                isViewOnly = true;
+                currentTeacherId = viewAsId; 
+                setupImpersonationUI();
+                await loadTeacherData(viewAsId);
+            } else {
+                alert("Unauthorized Access!");
+                window.location.replace("/login");
+            }
         } else {
-            window.location.replace("/login");
+            if (loggedInRole === "teacher") {
+                currentTeacherId = user.uid;
+                await loadTeacherData(user.uid);
+            } else {
+                window.location.replace("/login");
+            }
         }
     });
 
@@ -77,44 +91,61 @@ document.addEventListener("DOMContentLoaded", () => {
         if(document.getElementById("btnOpenSessionModal")) document.getElementById("btnOpenSessionModal").classList.add("hidden");
         if(document.getElementById("btnOpenAssign")) document.getElementById("btnOpenAssign").classList.add("hidden");
         if(document.getElementById("btnOpenGlobalRemark")) document.getElementById("btnOpenGlobalRemark").classList.add("hidden");
+        
+        const header = document.querySelector("header");
+        if(header) {
+            header.insertAdjacentHTML('afterend', `
+                <div class="bg-yellow-100 border-b border-yellow-200 text-yellow-800 text-center py-2 text-xs font-bold tracking-widest z-50">
+                    <i class="fa-solid fa-eye mr-2"></i> VIEW ONLY MODE (ADMIN)
+                </div>
+            `);
+        }
     }
 
     async function loadTeacherData(targetUid) {
         const userDoc = await getDoc(doc(db, "users", targetUid));
-        
         if(userDoc.exists()) {
             const data = userDoc.data();
-            document.getElementById("welcomeText").innerText = `${data.name || "Professor"} ${isViewOnly ? '(View Mode)' : ''}`;
-            document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            const fullName = data.name || "Professor";
+            
+            document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
+            
+            if(document.getElementById("currentDateDisplay")) {
+                document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            }
 
-            const nameParts = (data.name||"").trim().split(/\s+/);
+            const nameParts = fullName.trim().split(/\s+/);
             let initials = "T";
             if (nameParts.length === 1) {
                 initials = nameParts[0][0].toUpperCase();
             } else if (nameParts.length >= 2) {
                 initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
             }
-            document.getElementById("userAvatarInitials").innerText = initials;
+            
+            const avatarEl = document.getElementById("userAvatarInitials");
+            if(avatarEl) avatarEl.innerText = initials;
 
             await loadMyClasses();
+            await loadRecentSessionsLog();
             await loadMyPostedAssignments();
             await loadMyStudents(); 
-            await loadRecentSessionsLog();
         }
     }
 
-    // ================= 2. LOAD CLASSES (ERP INSIGHTS) =================
+    // ================= 2. LOAD CLASSES & CALCULATE STATS =================
     async function loadMyClasses() {
         const q = query(collection(db, "teacher_assignments"), where("teacherId", "==", currentTeacherId));
         const snapshot = await getDocs(q);
         
         const container = document.getElementById("myClassesContainer");
         const remarkSelClass = document.getElementById("remarkSelClass");
+        const selClass = document.getElementById("selMyClass");
+        const assignSelClass = document.getElementById("assignSelClass");
         
         if(container) container.innerHTML = "";
         if(remarkSelClass) remarkSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
-        if(document.getElementById("selMyClass")) document.getElementById("selMyClass").innerHTML = '<option value="">-- Choose Class --</option>';
-        if(document.getElementById("assignSelClass")) document.getElementById("assignSelClass").innerHTML = '<option value="">-- Choose Class --</option>';
+        if(selClass) selClass.innerHTML = '<option value="">-- Choose Class --</option>';
+        if(assignSelClass) assignSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
         
         if(document.getElementById("statClasses")) document.getElementById("statClasses").innerText = snapshot.size;
 
@@ -125,56 +156,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
         for (const docSnap of snapshot.docs) {
             const data = docSnap.data();
-            const sectionStr = data.sectionId.toUpperCase();
-            myAllocatedClasses.push({ id: docSnap.id, ...data });
+            const secStr = data.sectionId.trim().toUpperCase();
+            myAllocatedClasses.push(secStr);
 
-            // Fetch Total Students in this class
-            const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", sectionStr));
+            // Fetch Total Students Enrolled
+            const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", secStr));
             const totalStudents = (await getDocs(stQ)).size;
+
+            // Fetch Last Attendance Percentage
+            let lastAttPercent = 0;
+            const lastSessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr), orderBy("createdAt", "desc"), limit(1));
+            const lastSessSnap = await getDocs(lastSessQ);
+            
+            if(!lastSessSnap.empty) {
+                const sessId = lastSessSnap.docs[0].id;
+                const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", sessId));
+                const attCount = (await getDocs(marksQ)).size;
+                lastAttPercent = totalStudents > 0 ? Math.round((attCount/totalStudents)*100) : 0;
+            }
 
             if(container) {
                 container.innerHTML += `
                     <div class="p-6 border border-slate-100 bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.03)] hover:-translate-y-1 transition-transform">
                         <div class="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
                             <div class="bg-blue-50 text-blue-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chalkboard"></i></div>
-                            <span class="bg-brand/10 text-brand font-black px-3 py-1 rounded-md text-[10px] uppercase tracking-wider">Sec ${sectionStr}</span>
+                            <span class="bg-brand/10 text-brand font-black px-3 py-1 rounded-md text-[10px] uppercase tracking-wider">Sec ${secStr}</span>
                         </div>
                         <h3 class="font-black text-slate-800 text-lg mb-4">${data.subjectName}</h3>
                         <div class="flex justify-between items-center text-xs font-bold text-slate-500">
-                            <p><i class="fa-solid fa-users mr-1"></i> ${totalStudents} Students</p>
+                            <p><i class="fa-solid fa-users mr-1"></i> ${totalStudents} Enrolled</p>
+                            <p class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Last Att: ${lastAttPercent}%</p>
                         </div>
                     </div>
                 `;
             }
 
-            const optionHTML = `<option value="${sectionStr}|${data.subjectName}">${data.subjectName} (Sec: ${sectionStr})</option>`;
-            if(remarkSelClass) remarkSelClass.innerHTML += `<option value="${sectionStr}">${sectionStr}</option>`;
-            if(document.getElementById("selMyClass")) document.getElementById("selMyClass").innerHTML += optionHTML;
-            if(document.getElementById("assignSelClass")) document.getElementById("assignSelClass").innerHTML += optionHTML;
+            const optionHTML = `<option value="${secStr}|${data.subjectName}">${data.subjectName} (Sec: ${secStr})</option>`;
+            if(selClass) selClass.innerHTML += optionHTML;
+            if(assignSelClass) assignSelClass.innerHTML += optionHTML;
+            if(remarkSelClass) remarkSelClass.innerHTML += `<option value="${secStr}">${secStr}</option>`;
         }
     }
 
-    // ================= 3. RECENT SESSION LOGS =================
+    // ================= 3. RECENT SESSIONS WITH % =================
     async function loadRecentSessionsLog() {
         const container = document.getElementById("recentSessionsLog");
         if(!container) return;
+        container.innerHTML = "";
 
-        const q = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId), orderBy("createdAt", "desc"), limit(5));
+        const q = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId), orderBy("createdAt", "desc"), limit(6));
         const snapshot = await getDocs(q);
 
-        container.innerHTML = "";
         if(snapshot.empty) {
-            container.innerHTML = "<p class='text-slate-500 text-sm'>No attendance sessions conducted yet.</p>";
-            return;
+            container.innerHTML = "<p class='text-slate-500 text-sm'>No sessions conducted yet.</p>"; return;
         }
 
         for (const docSnap of snapshot.docs) {
             const data = docSnap.data();
             const dateStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'N/A';
             
-            // Calculate how many attended this specific session
+            const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", data.sectionId.toUpperCase()));
+            const totalSt = (await getDocs(stQ)).size;
+            
             const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", docSnap.id));
-            const attendeesCount = (await getDocs(marksQ)).size;
+            const attCount = (await getDocs(marksQ)).size;
+            
+            let pct = totalSt > 0 ? Math.round((attCount/totalSt)*100) : 0;
 
             container.innerHTML += `
                 <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl shadow-sm flex justify-between items-center">
@@ -183,37 +230,36 @@ document.addEventListener("DOMContentLoaded", () => {
                         <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-clock mr-1"></i> ${dateStr}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-2xl font-black text-brand">${attendeesCount}</p>
-                        <p class="text-[9px] uppercase font-bold text-slate-400">Present</p>
+                        <p class="text-2xl font-black text-brand">${pct}%</p>
+                        <p class="text-[9px] uppercase font-bold text-slate-400">Present (${attCount}/${totalSt})</p>
                     </div>
                 </div>
             `;
         }
     }
 
-    // ================= 4. LOAD MY STUDENTS (ACTIONS ADDED) =================
+    // ================= 4. LOAD MY STUDENTS =================
     async function loadMyStudents() {
-        const container = document.getElementById("myStudentsListContainer");
-        if(!container) return;
+        const studentContainer = document.getElementById("myStudentsListContainer");
+        if(!studentContainer) return;
 
         if(myAllocatedClasses.length === 0) {
-            container.innerHTML = "<p class='text-slate-500 text-center py-10'>No sections allocated to you yet.</p>";
+            studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No sections allocated to you yet.</p>";
             return;
         }
-
-        const mySections = myAllocatedClasses.map(c => c.sectionId.toUpperCase());
-        const q = query(collection(db, "users"), where("role", "==", "student"), where("section", "in", mySections));
+        
+        const q = query(collection(db, "users"), where("role", "==", "student"), where("section", "in", myAllocatedClasses));
         const snapshot = await getDocs(q);
 
         if(snapshot.empty) {
-            container.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
+            studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections. Make sure students have updated their section in their profile.</p>";
             return;
         }
 
         let html = `<table class="w-full text-left min-w-[600px]"><thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Student Details</th><th class="px-6 py-4">Section</th><th class="px-6 py-4 text-right">Actions</th></tr></thead><tbody class="divide-y divide-slate-100">`;
         
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
+        snapshot.forEach(doc => {
+            const data = doc.data();
             html += `<tr class="hover:bg-slate-50 transition">
                 <td class="px-6 py-4">
                     <p class="font-bold text-slate-800">${data.name}</p>
@@ -221,13 +267,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
                 <td class="px-6 py-4 font-black text-blue-600 bg-blue-50 rounded-lg inline-block mt-3 ml-6 px-3 py-1 text-xs">${data.section}</td>
                 <td class="px-6 py-4 text-right">
-                    <button class="bg-slate-100 hover:bg-brand hover:text-white text-slate-600 px-4 py-2 rounded-lg text-xs font-bold transition mr-2" onclick="window.open('/student-dashboard?viewAs=${docSnap.id}', '_blank')">Dashboard</button>
-                    <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 hover:text-white text-orange-600 px-4 py-2 rounded-lg text-xs font-bold transition" data-sid="${docSnap.id}" data-sname="${data.name}">Remark</button>
+                    <button class="bg-slate-100 hover:bg-brand hover:text-white text-slate-600 px-4 py-2 rounded-lg text-xs font-bold transition mr-2" onclick="window.open('/student-dashboard?viewAs=${doc.id}', '_blank')">Dashboard</button>
+                    <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 hover:text-white text-orange-600 px-4 py-2 rounded-lg text-xs font-bold transition" data-sid="${doc.id}" data-sname="${data.name}">Remark</button>
                 </td>
             </tr>`;
         });
         html += `</tbody></table>`;
-        container.innerHTML = html;
+        studentContainer.innerHTML = html;
     }
 
     // ================= 5. GLOBAL REMARK SYSTEM =================
@@ -236,7 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const remarkSelStudent = document.getElementById("remarkSelStudent");
 
     if(!isViewOnly && remarkModal) {
-        // Quick Remark from Student List
         document.addEventListener("click", async (e) => {
             if(e.target.classList.contains("btn-quick-remark")) {
                 const sid = e.target.getAttribute("data-sid");
@@ -247,7 +292,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Open Modal from Header
         document.getElementById("btnOpenGlobalRemark").addEventListener("click", () => {
             remarkSelStudent.innerHTML = '<option value="">Select Class First</option>';
             remarkModal.classList.remove("hidden");
@@ -257,7 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
             remarkModal.classList.add("hidden");
         });
 
-        // Fetch students dynamically when class is selected
         if(remarkSelClass) {
             remarkSelClass.addEventListener("change", async () => {
                 const sec = remarkSelClass.value;
@@ -291,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     remark: text, 
                     timestamp: serverTimestamp() 
                 });
-                alert("Remark sent!");
+                alert("Remark sent successfully!");
                 remarkModal.classList.add("hidden"); 
                 document.getElementById("remarkText").value = "";
             } catch(e) { 
@@ -303,61 +346,73 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 6. LIVE ATTENDANCE (QR) =================
+    // ================= 6. DYNAMIC QR LIVE SESSION LOGIC =================
     const sessionModal = document.getElementById("sessionModal");
     const btnOpenSessionModal = document.getElementById("btnOpenSessionModal");
     const btnCloseSessionModal = document.getElementById("btnCloseSessionModal");
     const btnStartSession = document.getElementById("btnStartSession");
+    
     const qrDisplayModal = document.getElementById("qrDisplayModal");
     const btnCloseQr = document.getElementById("btnCloseQr");
     const qrCodeContainer = document.getElementById("qrCodeContainer");
     const qrTimerDisplay = document.getElementById("qrTimerDisplay");
+    const qrClassDisplay = document.getElementById("qrClassDisplay");
 
-    let activeSessionId = null; 
-    let countdownInterval = null; 
+    let activeSessionId = null;
+    let countdownInterval = null;
     let qrRefreshInterval = null;
+    let qrcodeObj = null;
 
     if(!isViewOnly && btnOpenSessionModal) {
         btnOpenSessionModal.addEventListener("click", () => sessionModal.classList.remove("hidden"));
         btnCloseSessionModal.addEventListener("click", () => sessionModal.classList.add("hidden"));
-        
+
         btnStartSession.addEventListener("click", async () => {
             const selectedValue = document.getElementById("selMyClass").value;
             if(!selectedValue) {
-                alert("Select a class first!");
+                if(typeof showToast === 'function') showToast("Select a class first!", "error");
+                else alert("Select a class first!");
                 return;
             }
+
             const [sectionId, subjectName] = selectedValue.split("|");
             
-            btnStartSession.innerHTML = `Generating...`; 
+            btnStartSession.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating QR...`;
             btnStartSession.disabled = true;
             
             try {
-                const now = new Date(); 
-                const expiresAt = new Date(now.getTime() + 5 * 60000); // 5 mins expiry
+                const now = new Date();
+                const expiresAt = new Date(now.getTime() + 5 * 60000); // 5 mins
                 const initialToken = Math.random().toString(36).substring(2, 10);
-                
+
                 const sessionRef = await addDoc(collection(db, "attendance_sessions"), {
                     teacherId: currentTeacherId, 
                     sectionId: sectionId, 
                     subject: subjectName, 
                     createdAt: now, 
                     expiresAt: expiresAt, 
-                    isActive: true, 
+                    isActive: true,
                     currentToken: initialToken
                 });
-                
+
                 activeSessionId = sessionRef.id;
-                sessionModal.classList.add("hidden"); 
+                
+                sessionModal.classList.add("hidden");
                 qrDisplayModal.classList.remove("hidden");
-                document.getElementById("qrClassDisplay").innerText = `${subjectName} (Sec: ${sectionId})`;
+                qrClassDisplay.innerText = `${subjectName} (Sec: ${sectionId})`;
                 
                 startSessionLogic(initialToken);
-            } catch (error) { 
+                
+                if(typeof showToast === 'function') showToast("Live Attendance Started!", "success");
+                else alert("Live Attendance Started!");
+                
+            } catch (error) {
                 console.error(error); 
-            } finally { 
-                btnStartSession.innerHTML = "Show QR Code"; 
-                btnStartSession.disabled = false; 
+                if(typeof showToast === 'function') showToast("Error starting session", "error");
+                else alert("Error starting session");
+            } finally {
+                btnStartSession.innerHTML = "Show QR Code";
+                btnStartSession.disabled = false;
             }
         });
     }
@@ -369,111 +424,124 @@ document.addEventListener("DOMContentLoaded", () => {
 
         countdownInterval = setInterval(async () => {
             timeLeft--;
-            const m = Math.floor(timeLeft / 60); 
-            const s = timeLeft % 60;
-            qrTimerDisplay.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            if (timeLeft <= 0) endSession(); 
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            qrTimerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timeLeft <= 0) {
+                endSession(); 
+            }
         }, 1000);
 
-        // Security: Change Token every 5 seconds
         qrRefreshInterval = setInterval(async () => {
             if(!activeSessionId) return;
             const newToken = Math.random().toString(36).substring(2, 10);
             try {
-                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { currentToken: newToken });
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), {
+                    currentToken: newToken
+                });
                 drawQRCode(activeSessionId, newToken);
-            } catch(e) {}
+            } catch(e) { console.log(e); }
         }, 5000);
     }
 
     function drawQRCode(sessionId, token) {
+        if(!qrCodeContainer) return;
         qrCodeContainer.innerHTML = ""; 
         const scanUrl = `https://acet-nexus.onrender.com/scan?session=${sessionId}&token=${token}`;
-        new QRCode(qrCodeContainer, { 
-            text: scanUrl, 
-            width: 250, 
-            height: 250, 
-            colorDark : "#0f172a", 
-            colorLight : "#ffffff", 
-            correctLevel : QRCode.CorrectLevel.H 
+        
+        qrcodeObj = new QRCode(qrCodeContainer, {
+            text: scanUrl,
+            width: 250,
+            height: 250,
+            colorDark : "#0f172a",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
         });
     }
 
     async function endSession() {
-        clearInterval(countdownInterval); 
+        clearInterval(countdownInterval);
         clearInterval(qrRefreshInterval);
         qrDisplayModal.classList.add("hidden");
+        
         if (activeSessionId) {
-            alert("Attendance Session Closed");
-            try { 
-                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { isActive: false }); 
-            } catch(e) {}
+            if(typeof showToast === 'function') showToast("Attendance Session Closed", "error");
+            else alert("Attendance Session Closed");
+            try {
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { isActive: false });
+            } catch(e) { console.log(e); }
         }
         activeSessionId = null;
     }
-    
+
     if (btnCloseQr) {
-        btnCloseQr.addEventListener("click", () => { 
-            if (confirm("End session?")) endSession(); 
+        btnCloseQr.addEventListener("click", () => {
+            if (confirm("Are you sure you want to close this QR and end the session early?")) {
+                endSession();
+            }
         });
     }
 
-    // ================= 7. POST ASSIGNMENTS & VIEW SUBMISSIONS =================
+    // ================= 7. POST ASSIGNMENTS =================
     const assignModal = document.getElementById("assignModal");
     if(!isViewOnly && assignModal) {
-        document.getElementById("btnOpenAssign").addEventListener("click", () => assignModal.classList.remove("hidden"));
-        document.getElementById("btnCloseAssign").addEventListener("click", () => assignModal.classList.add("hidden"));
-        
-        document.getElementById("btnSaveAssign").addEventListener("click", async () => {
-            const selectedVal = document.getElementById("assignSelClass").value;
-            const title = document.getElementById("assignTitle").value.trim();
-            const dueDate = document.getElementById("assignDue").value;
+        const btnOpenAssign = document.getElementById("btnOpenAssign");
+        const btnCloseAssign = document.getElementById("btnCloseAssign");
+        const btnSaveAssign = document.getElementById("btnSaveAssign");
 
-            if(!selectedVal || !title || !dueDate) {
-                alert("Please fill all details!");
-                return;
-            }
-            const [sectionId, subjectName] = selectedVal.split("|");
+        if(btnOpenAssign) btnOpenAssign.addEventListener("click", () => assignModal.classList.remove("hidden"));
+        if(btnCloseAssign) btnCloseAssign.addEventListener("click", () => assignModal.classList.add("hidden"));
 
-            try {
-                await addDoc(collection(db, "assignments"), {
-                    teacherId: currentTeacherId, 
-                    sectionId: sectionId, 
-                    subjectName: subjectName, 
-                    title: title, 
-                    dueDate: dueDate, 
-                    postedAt: new Date()
-                });
-                alert("Assignment Posted!"); 
-                assignModal.classList.add("hidden"); 
-                loadMyPostedAssignments();
-            } catch (err) { 
-                alert("Failed to post."); 
-            }
-        });
+        if(btnSaveAssign) {
+            btnSaveAssign.addEventListener("click", async () => {
+                const selectedVal = document.getElementById("assignSelClass").value;
+                const title = document.getElementById("assignTitle").value.trim();
+                const dueDate = document.getElementById("assignDue").value;
+
+                if(!selectedVal || !title || !dueDate) {
+                    alert("Please fill all details!");
+                    return;
+                }
+                const [sectionId, subjectName] = selectedVal.split("|");
+
+                try {
+                    await addDoc(collection(db, "assignments"), {
+                        teacherId: currentTeacherId, sectionId: sectionId, subjectName: subjectName, title: title, dueDate: dueDate, postedAt: new Date()
+                    });
+
+                    alert("Assignment Posted Successfully!");
+                    assignModal.classList.add("hidden");
+                    document.getElementById("assignTitle").value = "";
+                    document.getElementById("assignDue").value = "";
+                    loadMyPostedAssignments();
+                } catch (err) {
+                    console.error(err); alert("Failed to post assignment.");
+                }
+            });
+        }
     }
 
+    // ================= 8. LOAD ASSIGNMENTS & SUBMISSIONS =================
     async function loadMyPostedAssignments() {
         const q = query(collection(db, "assignments"), where("teacherId", "==", currentTeacherId));
         const snapshot = await getDocs(q);
-        
-        if(document.getElementById("statAssignments")) {
-            document.getElementById("statAssignments").innerText = snapshot.size;
-        }
+        if(document.getElementById("statAssignments")) document.getElementById("statAssignments").innerText = snapshot.size;
 
         const container = document.getElementById("postedAssignmentsContainer");
-        if(!container) return; 
+        if(!container) return;
         
         container.innerHTML = "";
-        
-        if(snapshot.empty) { 
-            container.innerHTML = "<p class='text-slate-500 text-sm'>No assignments posted yet.</p>"; 
-            return; 
+
+        if(snapshot.empty) {
+            container.innerHTML = "<p class='text-slate-500 text-sm'>No assignments posted yet.</p>";
+            return;
         }
 
         snapshot.forEach(doc => {
-            const data = doc.data(); 
+            const data = doc.data();
             const formattedDate = new Date(data.dueDate).toLocaleDateString();
+            
             container.innerHTML += `
                 <div class="flex justify-between items-center p-5 bg-white border border-slate-100 shadow-sm rounded-2xl hover:shadow-md transition">
                     <div>
@@ -483,7 +551,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button class="btn-view-subs bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl transition" data-id="${doc.id}" data-title="${data.title}">
                         View Submissions
                     </button>
-                </div>`;
+                </div>
+            `;
         });
     }
 
@@ -552,18 +621,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const studentId = btn.getAttribute("data-studentid");
                 const remarkText = document.getElementById(`remark-${subId}`).value.trim();
 
-                if(!remarkText) {
-                    alert("Please type a remark before saving.");
-                    return;
-                }
+                if(!remarkText) return alert("Please type a remark before saving.");
 
                 try {
                     await addDoc(collection(db, "remarks"), {
-                        studentId: studentId, 
-                        teacherId: currentTeacherId, 
-                        remark: remarkText, 
-                        submissionId: subId, 
-                        timestamp: serverTimestamp()
+                        studentId: studentId, teacherId: currentTeacherId, remark: remarkText, submissionId: subId, timestamp: serverTimestamp()
                     });
                     
                     btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Sent`;
@@ -571,16 +633,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     btn.classList.replace("hover:bg-emerald-600", "hover:bg-slate-300");
                     btn.disabled = true;
                 } catch(err) {
-                    console.error(err); 
-                    alert("Failed to send remark.");
+                    console.error(err); alert("Failed to send remark.");
                 }
             }
         });
     }
 
-    // ================= 8. LOGOUT =================
-    document.getElementById("btnLogout").addEventListener("click", () => {
-        if(isViewOnly) window.close(); 
-        else signOut(auth).then(() => window.location.replace("/login"));
-    });
+    // ================= 9. LOGOUT =================
+    const btnLogout = document.getElementById("btnLogout");
+    if(btnLogout) {
+        btnLogout.addEventListener("click", () => {
+            if(isViewOnly) window.close(); 
+            else signOut(auth).then(() => window.location.replace("/login"));
+        });
+    }
 });

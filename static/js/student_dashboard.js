@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. PREMIUM TAB SWITCHING LOGIC (SMART TRACEBACK) =================
+    // ================= 0. TAB SWITCHING LOGIC =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
     const defaultTabId = "view-dashboard";
@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.body.style.overflow = "auto";
             }
 
-            // 🔥 SMART ROUTING LOGIC (THE LOOP KILLER)
             if (activeTabId === defaultTabId && targetId !== defaultTabId) {
                 history.pushState({ tab: targetId }, "");
             } else {
@@ -111,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if(document.getElementById("welcomeText")) document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
                 
-                // 🔥 FIX: Aggressive uppercase to match database exactly
                 currentStudentSection = data.section ? data.section.trim().toUpperCase() : "Unassigned";
                 if(document.getElementById("studentSectionBadge")) document.getElementById("studentSectionBadge").innerText = `SEC: ${currentStudentSection}`;
                 
@@ -127,12 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 setupEditableTarget();
 
-                // Run independent blocks safely so one failure doesn't crash the UI
-                try { listenForLiveSession(); } catch(e) { console.error(e); }
-                try { await loadMyHistoryAndGraph(); } catch(e) { console.error(e); }
-                try { await loadMyAssignments(); } catch(e) { console.error(e); }
-                try { await loadMyRemarks(); } catch(e) { console.error(e); }
-                try { await loadMySubjects(); } catch(e) { console.error(e); }
+                try { listenForLiveSession(); } catch(e) { console.error("Live Session Error:", e); }
+                try { await loadMyHistoryAndGraph(); } catch(e) { console.error("History/Graph Error:", e); }
+                try { await loadMyAssignments(); } catch(e) { console.error("Assignments Error:", e); }
+                try { await loadMyRemarks(); } catch(e) { console.error("Remarks Error:", e); }
+                try { await loadMySubjects(); } catch(e) { console.error("Subjects Error:", e); }
             }
         } catch (error) {
             console.error("Critical User Load Error:", error);
@@ -223,18 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 await addDoc(collection(db, "attendance_marks"), {
-                    sessionId: activeSessionId, 
-                    studentId: currentStudentId, 
-                    sectionId: currentStudentSection, 
-                    timestamp: serverTimestamp(), 
-                    status: "Present"
+                    sessionId: activeSessionId, studentId: currentStudentId, sectionId: currentStudentSection, timestamp: serverTimestamp(), status: "Present"
                 });
 
                 btnMarkPresent.classList.replace("bg-white", "bg-green-500");
                 btnMarkPresent.classList.replace("text-brand", "text-white");
                 btnMarkPresent.innerHTML = `Marked Present`;
-                
-                // Refresh graph dynamically
                 loadMyHistoryAndGraph(); 
             } catch (error) {
                 console.error(error); alert("Error marking attendance.");
@@ -244,21 +235,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 5. HISTORY & REAL CUMULATIVE GRAPHS =================
+    // ================= 5. HISTORY, GRAPHS & LOGS =================
     async function loadMyHistoryAndGraph() {
         if(currentStudentSection === "Unassigned") return;
 
-        // 🔥 STEP 1: Fetch total sessions held for this section, ordered by time
         const sessionsQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection), orderBy("createdAt", "asc"));
         const sessionsSnap = await getDocs(sessionsQ);
         const totalClassesHeld = sessionsSnap.size;
-        
-        if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = totalClassesHeld;
 
-        // 🔥 STEP 2: Fetch this student's attendance marks
         const myAttendanceSnap = await getDocs(query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId)));
         
-        // Use a Set to quickly look up which sessions the student attended
         const attendedSessionIds = new Set();
         myAttendanceSnap.forEach(doc => {
             attendedSessionIds.add(doc.data().sessionId);
@@ -268,34 +254,31 @@ document.addEventListener("DOMContentLoaded", () => {
         let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
         let missedClasses = totalClassesHeld > classesAttended ? totalClassesHeld - classesAttended : 0;
 
+        if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = classesAttended; // User requested Lectures Attended count here
         if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
         if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
         
-        // Update Doughnut Chart (Present vs Absent)
         drawChart(classesAttended, missedClasses);
 
-        // 🔥 STEP 3: REAL CUMULATIVE TREND GRAPH 🔥
+        // Calculate Real Line Chart Data
         let labels = [];
         let trendData = [];
-        let cumulativeHeld = 0;
-        let cumulativeAttended = 0;
+        let runTotal = 0;
+        let runAttended = 0;
 
         if (sessionsSnap.empty) {
-            drawLineChart(['No Data'], [0]); // Empty state fallback
+            drawLineChart(['No Data'], [0]); 
         } else {
             sessionsSnap.forEach((sessDoc) => {
-                cumulativeHeld++;
-                if (attendedSessionIds.has(sessDoc.id)) {
-                    cumulativeAttended++;
-                }
+                runTotal++;
+                if (attendedSessionIds.has(sessDoc.id)) { runAttended++; }
                 
                 const sessData = sessDoc.data();
                 const d = sessData.createdAt ? new Date(sessData.createdAt.toDate()) : new Date();
                 labels.push(`${d.getDate()}/${d.getMonth()+1}`);
-                trendData.push(Math.round((cumulativeAttended / cumulativeHeld) * 100));
+                trendData.push(Math.round((runAttended / runTotal) * 100));
             });
 
-            // Keep graph clean by showing only the last 10 sessions if it gets too long
             if (labels.length > 10) {
                 labels = labels.slice(-10);
                 trendData = trendData.slice(-10);
@@ -303,9 +286,9 @@ document.addEventListener("DOMContentLoaded", () => {
             drawLineChart(labels, trendData);
         }
 
-        // 🔥 STEP 4: Render Activity Logs (Newest first)
-        const container1 = document.getElementById("recentActivityContainer"); // Dashboard
-        const container2 = document.getElementById("myHistoryContainer");      // Analytics Tab (if exists)
+        // Render Recent Logs
+        const container1 = document.getElementById("recentActivityContainer");
+        const container2 = document.getElementById("myHistoryContainer");
         
         const renderLogs = (container) => {
             if(!container) return;
@@ -313,9 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(myAttendanceSnap.empty) {
                 container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
             } else {
-                // Sort logs dynamically (Newest first)
                 const sortedLogs = [...myAttendanceSnap.docs].sort((a,b) => b.data().timestamp - a.data().timestamp).slice(0, 10);
-                
                 sortedLogs.forEach(docSnap => {
                     const data = docSnap.data();
                     const dateStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'N/A';
@@ -324,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
                                 <div>
-                                    <p class="font-bold text-slate-800">${data.subject || 'Lecture'}</p>
+                                    <p class="font-bold text-slate-800">${data.subject || 'Lecture Session'}</p>
                                     <p class="text-xs text-slate-500">${dateStr}</p>
                                 </div>
                             </div>
@@ -344,7 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if(!ctx) return;
 
         if(attendanceChartInstance) attendanceChartInstance.destroy(); 
-        
         const dataVals = (attended === 0 && missed === 0) ? [1] : [attended, missed];
         const bgColors = (attended === 0 && missed === 0) ? ['#e2e8f0'] : ['#4361ee', '#e2e8f0'];
 
@@ -366,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Cumulative Attendance %',
+                    label: 'Cumulative Attendance Rate',
                     data: data,
                     borderColor: '#4361ee',
                     backgroundColor: 'rgba(67, 97, 238, 0.1)',

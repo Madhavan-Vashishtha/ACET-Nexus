@@ -72,13 +72,15 @@
                     </div>
                     <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
                         <div class="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-3xl"><i class="fa-solid fa-file-signature"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Total Posted Assignments</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Total Posted Tasks</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-300">
-                    <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Quick Actions & Shortcuts</h2>
-                    <p class="text-slate-500 text-sm">Use the top-right buttons to quickly start an attendance session or post a new assignment to your sections.</p>
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-300 min-h-[300px] flex flex-col">
+                    <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Class Sessions & Attendance %</h2>
+                    <div id="recentSessionsLog" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                        <p class="text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Fetching real-time logs...</p>
+                    </div>
                 </div>
             </section>
 
