@@ -12,12 +12,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. PREMIUM TAB SWITCHING LOGIC (FIXED) =================
+    // ================= 0. PREMIUM TAB SWITCHING (SMART TRACEBACK) =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
+    const defaultTabId = "view-dashboard"; // 🔥 Teacher Default Tab
 
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {
+            const activeTab = document.querySelector('.tab-content.active');
+            const activeTabId = activeTab ? activeTab.id : defaultTabId;
+            const targetId = btn.getAttribute("data-target");
+
+            if (activeTabId === targetId) return;
+
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
@@ -30,21 +37,21 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
-            const targetId = btn.getAttribute("data-target");
             const targetView = document.getElementById(targetId);
             if(targetView) {
                 targetView.classList.add("active");
                 targetView.style.display = "block"; 
             }
 
-            // 🔥 REPLACE STATE FIX
             const aside = document.querySelector("aside");
             if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
-                if(history.state && history.state.menuOpen) {
-                    history.replaceState({ tab: targetId }, ""); 
-                }
+            }
+
+            // 🔥 SMART ROUTING LOGIC (THE LOOP KILLER)
+            if (activeTabId === defaultTabId && targetId !== defaultTabId) {
+                history.pushState({ tab: targetId }, ""); 
             } else {
                 history.replaceState({ tab: targetId }, "");
             }
@@ -54,8 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================= 1. AUTHENTICATE & IMPERSONATION =================
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            // 🔥 STRICT SECURITY REDIRECT
-            window.location.replace("/login");
+            window.location.replace("/login"); // 🔥 STRICT REDIRECT
             return;
         }
 
@@ -497,12 +503,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 7. LOGOUT (REPLACE FIX) =================
-    const btnLogout = document.getElementById("btnLogout");
-    if(btnLogout) {
-        btnLogout.addEventListener("click", () => {
-            if(isViewOnly) window.close(); 
-            else signOut(auth).then(() => window.location.replace("/login"));
-        });
-    }
+    // ================= 7. LOGOUT =================
+    document.getElementById("btnLogout").addEventListener("click", () => {
+        if(isViewOnly) window.close(); 
+        else signOut(auth).then(() => window.location.replace("/login"));
+    });
 });

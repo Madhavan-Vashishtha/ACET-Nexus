@@ -4,36 +4,61 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, g
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // ================= 0. PREMIUM TAB SWITCHING LOGIC =================
+    // ================= 0. PREMIUM TAB SWITCHING (SMART TRACEBACK) =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
+    const defaultTabId = "view-overview"; // 🔥 Admin Default Tab
 
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {
+            const activeTab = document.querySelector('.tab-content.active');
+            const activeTabId = activeTab ? activeTab.id : defaultTabId;
+            const targetId = btn.getAttribute("data-target");
+
+            if (activeTabId === targetId) return; // Agar same tab click kiya toh kuch mat karo
+
             // Remove active classes
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
-            views.forEach(v => v.classList.remove("active"));
+            views.forEach(v => {
+                v.classList.remove("active");
+                v.style.display = "none";
+            });
 
             // Add active to clicked
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
-            const targetId = btn.getAttribute("data-target");
-            document.getElementById(targetId).classList.add("active");
+            const targetView = document.getElementById(targetId);
+            if(targetView) {
+                targetView.classList.add("active");
+                targetView.style.display = "block";
+            }
 
-            // 🔥 REPLACE STATE FIX FOR LOOP PREVENTION
-            history.replaceState({ tab: targetId }, "");
+            // Mobile menu auto-close
+            const aside = document.querySelector("aside");
+            if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                aside.classList.remove("menu-open");
+                document.body.style.overflow = "auto";
+            }
+
+            // 🔥 SMART ROUTING LOGIC (THE LOOP KILLER)
+            if (activeTabId === defaultTabId && targetId !== defaultTabId) {
+                // Default -> Sub-Tab = PUSH STATE (Creates 1 back step)
+                history.pushState({ tab: targetId }, "");
+            } else {
+                // Sub-Tab -> Sub-Tab OR Sub-Tab -> Default = REPLACE STATE (No loop!)
+                history.replaceState({ tab: targetId }, "");
+            }
         });
     });
 
     // ================= 1. AUTHENTICATE & LOAD ADMIN DATA =================
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            // 🔥 STRICT SECURITY REDIRECT (No bypass)
-            window.location.replace("/login");
+            window.location.replace("/login"); // 🔥 STRICT REDIRECT
             return;
         }
 
@@ -43,14 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("adminName").innerText = adminName;
             document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
             
-            // Set initials for avatar
             const nameParts = adminName.trim().split(/\s+/);
             let initials = "A";
             if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
             else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
             document.getElementById("userAvatarInitials").innerText = initials;
 
-            // Load initial data
             loadStats();
             loadPendingApprovals();
             loadSections();
@@ -144,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.closest('.btn-reject')) {
             const btn = e.target.closest('.btn-reject');
             const uid = btn.getAttribute("data-id");
-            const email = btn.getAttribute("data-email");
             if(confirm("Reject and delete this request permanently?")) {
                 try {
                     await fetch('/delete-user', {
@@ -315,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ================= 9. LOGOUT (REPLACE FIX) =================
+    // ================= 9. LOGOUT =================
     document.getElementById("btnLogout").addEventListener("click", () => {
         signOut(auth).then(() => { window.location.replace("/login"); });
     });

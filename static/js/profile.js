@@ -30,7 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSaveProfile = document.getElementById("btnSaveProfile");
     const btnBackToDashboard = document.getElementById("btnBackToDashboard");
 
-    // Completion Array
     const completionFields = [profName, profEmail, profPhone, profDob, profSection, profAddress, profBio, profPicUrl];
 
     function updateCompletion() {
@@ -56,13 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
         field.addEventListener("input", updateCompletion);
     });
 
-    // 1. Auth & Data Fetch
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUserId = user.uid;
             
             try {
-                // 🔥 Fetch active sections FIRST
                 const secSnap = await getDocs(collection(db, "sections"));
                 profSection.innerHTML = '<option value="" disabled selected>-- Select Section --</option>';
                 secSnap.forEach(s => {
@@ -70,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     profSection.innerHTML += `<option value="${sName}">${sName}</option>`;
                 });
 
-                // Ab user ka data fetch hoga
                 const userDoc = await getDoc(doc(db, "users", currentUserId));
                 
                 if(userDoc.exists()) {
@@ -120,11 +116,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error fetching profile: ", error);
             }
         } else {
-            window.location.href = "/login";
+            // 🔥 STRICT LOOP KILLER
+            window.location.replace("/login");
         }
     });
 
-    // 2. Real-time Avatar Preview
     profPicUrl.addEventListener("input", (e) => {
         const newUrl = e.target.value.trim();
         if(newUrl) {
@@ -134,7 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 3. Save Profile Updates
     btnSaveProfile.addEventListener("click", async () => {
         const originalText = btnSaveProfile.innerHTML;
         btnSaveProfile.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
@@ -173,11 +168,11 @@ document.addEventListener("DOMContentLoaded", () => {
         } 
     });
 
-    // 4. Back to Dashboard
+    // 🔥 SMART ROUTING (LOOP KILLER)
     btnBackToDashboard.addEventListener("click", () => {
-        if (!currentUserRole) return window.location.href = "/";
-        if (currentUserRole === 'admin') window.location.href = "/admin-dashboard";
-        else if (currentUserRole === 'teacher') window.location.href = "/teacher-dashboard";
-        else window.location.href = "/student-dashboard";
+        if (!currentUserRole) return window.location.replace("/");
+        if (currentUserRole === 'admin') window.location.replace("/admin-dashboard");
+        else if (currentUserRole === 'teacher') window.location.replace("/teacher-dashboard");
+        else window.location.replace("/student-dashboard");
     });
 });

@@ -194,7 +194,6 @@
     import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; 
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Navbar Styling
         const navbar = document.querySelector(".custom-navbar");
         if (navbar) {
             navbar.style.backgroundColor = "#0b132b";
@@ -205,7 +204,6 @@
             navbar.classList.remove("navbar-light-mode");
         }
 
-        // 🔥 PRO MOBILE MENU LOGIC
         const aside = document.querySelector("aside");
         
         if (window.innerWidth <= 992 && aside) {
@@ -263,7 +261,7 @@
             }
         }
 
-        // 🔥 AUTO-CLOSE MENU ON TAB CLICK
+        // Mobile menu auto close
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
@@ -276,26 +274,35 @@
             });
         });
 
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (LOOP KILLER)
+        // 🔥 SMART ROUTING FOR BACK BUTTON
         history.replaceState({ tab: 'view-overview' }, ""); 
 
         window.addEventListener("popstate", (e) => {
-            const aside = document.querySelector("aside");
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
                 return;
             }
 
-            const activeTab = document.querySelector('.tab-content.active');
-            // Agar overview par nahi hai, toh wapas overview pe le aao (bina history badhaye)
-            if (activeTab && activeTab.id !== 'view-overview') {
+            if (e.state && e.state.tab) {
+                // Read history state and switch tab
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.getElementById('view-overview').classList.add('active');
-                history.replaceState({ tab: 'view-overview' }, ""); 
+                const targetView = document.getElementById(e.state.tab);
+                if(targetView) targetView.classList.add('active');
+
+                // Update active button color
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    if(b.getAttribute('data-target') === e.state.tab) {
+                        b.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
+                        b.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
+                    } else {
+                        b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
+                        b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
+                    }
+                });
             } else {
-                // 🔥 ULTIMATE FIX: Agar overview par hi back dabaya, toh seedha Home phek do (No loop)
-                window.location.replace("/"); 
+                // Agar state empty hai, matlab hum Dashboard scope se bahar jaa rahe hain
+                window.location.replace("/");
             }
         });
 

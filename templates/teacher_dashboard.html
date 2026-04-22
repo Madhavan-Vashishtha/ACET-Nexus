@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/teacher.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -172,8 +172,6 @@
 </section>
 
 <script type="module">
-    import { db } from "./static/js/firebase.js";
-
     document.addEventListener("DOMContentLoaded", () => {
         const navbar = document.querySelector(".custom-navbar");
         if (navbar) {
@@ -242,19 +240,17 @@
             }
         }
 
+        // Mobile menu auto close
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                     aside.classList.remove("menu-open");
                     document.body.style.overflow = "auto";
-                    if(history.state && history.state.menuOpen) {
-                        history.replaceState({ tab: btn.getAttribute('data-target') }, ""); 
-                    }
                 }
             });
         });
 
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (LOOP KILLER)
+        // 🔥 SMART ROUTING FOR BACK BUTTON
         history.replaceState({ tab: 'view-dashboard' }, ""); 
 
         window.addEventListener("popstate", (e) => {
@@ -265,14 +261,25 @@
                 return;
             }
 
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab && activeTab.id !== 'view-dashboard') {
+            if (e.state && e.state.tab) {
+                // Read history state and switch tab
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.getElementById('view-dashboard').classList.add('active');
-                history.replaceState({ tab: 'view-dashboard' }, ""); 
+                const targetView = document.getElementById(e.state.tab);
+                if(targetView) targetView.classList.add('active');
+
+                // Update active button color
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    if(b.getAttribute('data-target') === e.state.tab) {
+                        b.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
+                        b.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
+                    } else {
+                        b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
+                        b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
+                    }
+                });
             } else {
-                // 🔥 ULTIMATE FIX: Seedha Home
-                window.location.replace("/"); 
+                // Agar state empty hai, matlab hum Dashboard scope se bahar jaa rahe hain
+                window.location.replace("/");
             }
         });
     });

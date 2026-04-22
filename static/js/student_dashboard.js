@@ -11,16 +11,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let attendanceChartInstance = null;
     let attendanceLineChartInstance = null;
 
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = newSearchParams(window.location.search);
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. TAB SWITCHING LOGIC =================
+    // ================= 0. PREMIUM TAB SWITCHING (SMART TRACEBACK) =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
+    const defaultTabId = "view-dashboard"; // 🔥 Student Default Tab
 
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {
+            const activeTab = document.querySelector('.tab-content.active');
+            const activeTabId = activeTab ? activeTab.id : defaultTabId;
+            const targetId = btn.getAttribute("data-target");
+
+            if (activeTabId === targetId) return;
+
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
@@ -33,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
-            const targetId = btn.getAttribute("data-target");
             const targetView = document.getElementById(targetId);
             if(targetView) {
                 targetView.classList.add("active");
@@ -44,12 +50,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
-                if(history.state && history.state.menuOpen) {
-                    // 🔥 REPLACE STATE FIX
-                    history.replaceState({ tab: targetId }, ""); 
-                }
+            }
+
+            // 🔥 SMART ROUTING LOGIC (THE LOOP KILLER)
+            if (activeTabId === defaultTabId && targetId !== defaultTabId) {
+                history.pushState({ tab: targetId }, "");
             } else {
-                // 🔥 REPLACE STATE FIX
                 history.replaceState({ tab: targetId }, "");
             }
         });
@@ -58,8 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================= 1. AUTHENTICATE & ISOLATED LOAD =================
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            // 🔥 STRICT SECURITY REDIRECT
-            window.location.replace("/login");
+            window.location.replace("/login"); // 🔥 STRICT REDIRECT
             return;
         }
 
@@ -448,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 8. LOGOUT (REPLACE FIX) =================
+    // ================= 8. LOGOUT =================
     const btnLogout = document.getElementById("btnLogout");
     if(btnLogout) {
         btnLogout.addEventListener("click", () => {
