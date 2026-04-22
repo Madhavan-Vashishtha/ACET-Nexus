@@ -4,76 +4,57 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, g
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // ================= 0. PREMIUM TAB SWITCHING (SMART TRACEBACK) =================
+    // ================= 0. PREMIUM TAB SWITCHING LOGIC =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
-    const defaultTabId = "view-overview"; // 🔥 Admin Default Tab
 
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {
-            const activeTab = document.querySelector('.tab-content.active');
-            const activeTabId = activeTab ? activeTab.id : defaultTabId;
-            const targetId = btn.getAttribute("data-target");
-
-            if (activeTabId === targetId) return; // Agar same tab click kiya toh kuch mat karo
-
             // Remove active classes
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
-            views.forEach(v => {
-                v.classList.remove("active");
-                v.style.display = "none";
-            });
+            views.forEach(v => v.classList.remove("active"));
 
             // Add active to clicked
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
-            const targetView = document.getElementById(targetId);
-            if(targetView) {
-                targetView.classList.add("active");
-                targetView.style.display = "block";
-            }
+            const targetId = btn.getAttribute("data-target");
+            document.getElementById(targetId).classList.add("active");
 
-            // Mobile menu auto-close
-            const aside = document.querySelector("aside");
-            if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
-                aside.classList.remove("menu-open");
-                document.body.style.overflow = "auto";
-            }
-
-            // 🔥 SMART ROUTING LOGIC (THE LOOP KILLER)
-            if (activeTabId === defaultTabId && targetId !== defaultTabId) {
-                // Default -> Sub-Tab = PUSH STATE (Creates 1 back step)
-                history.pushState({ tab: targetId }, "");
-            } else {
-                // Sub-Tab -> Sub-Tab OR Sub-Tab -> Default = REPLACE STATE (No loop!)
-                history.replaceState({ tab: targetId }, "");
-            }
+            // 🔥 REPLACE STATE FIX FOR LOOP PREVENTION
+            history.replaceState({ tab: targetId }, "");
         });
     });
 
     // ================= 1. AUTHENTICATE & LOAD ADMIN DATA =================
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            window.location.replace("/login"); // 🔥 STRICT REDIRECT
+            // 🔥 STRICT SECURITY REDIRECT (No bypass)
+            window.location.replace("/login");
             return;
         }
 
         const userDoc = await getDoc(doc(db, "users", user.uid));
+        
         if (userDoc.exists() && userDoc.data().role === "admin") {
             const adminName = userDoc.data().name || "Admin";
             document.getElementById("adminName").innerText = adminName;
             document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
             
+            // Set initials for avatar
             const nameParts = adminName.trim().split(/\s+/);
             let initials = "A";
-            if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
-            else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+            if (nameParts.length === 1) {
+                initials = nameParts[0][0].toUpperCase();
+            } else if (nameParts.length >= 2) {
+                initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+            }
             document.getElementById("userAvatarInitials").innerText = initials;
 
+            // Load initial data
             loadStats();
             loadPendingApprovals();
             loadSections();
@@ -93,9 +74,13 @@ document.addEventListener("DOMContentLoaded", () => {
         
         usersSnap.forEach(doc => {
             const data = doc.data();
-            if (data.status === "pending") pending++;
-            else if (data.role === "student") students++;
-            else if (data.role === "teacher") teachers++;
+            if (data.status === "pending") {
+                pending++;
+            } else if (data.role === "student") {
+                students++;
+            } else if (data.role === "teacher") {
+                teachers++;
+            }
         });
 
         document.getElementById("statStudents").innerText = students;
@@ -161,19 +146,30 @@ document.addEventListener("DOMContentLoaded", () => {
             const uid = e.target.closest('.btn-approve').getAttribute("data-id");
             if(confirm("Approve this user?")) {
                 await updateDoc(doc(db, "users", uid), { status: "approved" });
-                loadStats(); loadPendingApprovals(); loadStudents(); loadTeachers();
+                loadStats(); 
+                loadPendingApprovals(); 
+                loadStudents(); 
+                loadTeachers();
             }
         }
+
         if (e.target.closest('.btn-reject')) {
             const btn = e.target.closest('.btn-reject');
             const uid = btn.getAttribute("data-id");
+            const email = btn.getAttribute("data-email");
             if(confirm("Reject and delete this request permanently?")) {
                 try {
                     await fetch('/delete-user', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: uid })
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ uid: uid })
                     });
-                    loadStats(); loadPendingApprovals();
-                } catch(err) { console.error(err); alert("Failed to delete user completely."); }
+                    loadStats(); 
+                    loadPendingApprovals();
+                } catch(err) { 
+                    console.error(err); 
+                    alert("Failed to delete user completely."); 
+                }
             }
         }
     });
@@ -182,20 +178,33 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnCreateSection").addEventListener("click", async () => {
         const val = document.getElementById("inpNewSection").value.trim();
         if(!val) return alert("Enter section name");
+
         try {
-            await addDoc(collection(db, "sections"), { name: val.toUpperCase(), createdAt: serverTimestamp() });
+            await addDoc(collection(db, "sections"), { 
+                name: val.toUpperCase(), 
+                createdAt: serverTimestamp() 
+            });
             document.getElementById("inpNewSection").value = "";
-            loadSections(); loadStats();
-        } catch(e) { console.error(e); alert("Failed to add section."); }
+            loadSections(); 
+            loadStats();
+        } catch(e) { 
+            console.error(e); 
+            alert("Failed to add section."); 
+        }
     });
 
     async function loadSections() {
         const container = document.getElementById("sectionsListContainer");
         const selSection = document.getElementById("selSection");
-        container.innerHTML = ""; selSection.innerHTML = '<option value="">-- Select Section --</option>';
+        
+        container.innerHTML = ""; 
+        selSection.innerHTML = '<option value="">-- Select Section --</option>';
 
         const snapshot = await getDocs(collection(db, "sections"));
-        if(snapshot.empty) return container.innerHTML = "<p class='text-slate-400 text-sm col-span-2'>No active sections.</p>";
+        if(snapshot.empty) {
+            container.innerHTML = "<p class='text-slate-400 text-sm col-span-2'>No active sections.</p>";
+            return;
+        }
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -217,7 +226,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const q = query(collection(db, "users"), where("role", "==", "student"), where("status", "==", "approved"));
         const snapshot = await getDocs(q);
 
-        if(snapshot.empty) return list.innerHTML = "<tr><td colspan='4' class='text-center py-8 text-slate-400 font-medium'>No students found.</td></tr>";
+        if(snapshot.empty) {
+            list.innerHTML = "<tr><td colspan='4' class='text-center py-8 text-slate-400 font-medium'>No students found.</td></tr>";
+            return;
+        }
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -246,12 +258,17 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadTeachers() {
         const container = document.getElementById("adminTeachersList");
         const selTeacher = document.getElementById("selTeacher");
-        container.innerHTML = ""; selTeacher.innerHTML = '<option value="">-- Select Teacher --</option>';
+        
+        container.innerHTML = ""; 
+        selTeacher.innerHTML = '<option value="">-- Select Teacher --</option>';
         
         const q = query(collection(db, "users"), where("role", "==", "teacher"), where("status", "==", "approved"));
         const snapshot = await getDocs(q);
 
-        if(snapshot.empty) return container.innerHTML = "<p class='col-span-3 text-center py-8 text-slate-400 font-medium'>No teachers found.</p>";
+        if(snapshot.empty) {
+            container.innerHTML = "<p class='col-span-3 text-center py-8 text-slate-400 font-medium'>No teachers found.</p>";
+            return;
+        }
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -270,25 +287,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const allocateModal = document.getElementById("allocateModal");
-    document.getElementById("btnOpenAllocate").addEventListener("click", () => allocateModal.classList.remove("hidden"));
-    document.getElementById("btnCloseAllocate").addEventListener("click", () => allocateModal.classList.add("hidden"));
+    
+    document.getElementById("btnOpenAllocate").addEventListener("click", () => {
+        allocateModal.classList.remove("hidden");
+    });
+    
+    document.getElementById("btnCloseAllocate").addEventListener("click", () => {
+        allocateModal.classList.add("hidden");
+    });
 
     document.getElementById("btnSaveAllocate").addEventListener("click", async () => {
         const teacherId = document.getElementById("selTeacher").value;
         const sectionId = document.getElementById("selSection").value;
         const subjectName = document.getElementById("inpSubject").value.trim();
 
-        if(!teacherId || !sectionId || !subjectName) return alert("Fill all fields!");
+        if(!teacherId || !sectionId || !subjectName) {
+            alert("Fill all fields!");
+            return;
+        }
 
         try {
             await addDoc(collection(db, "teacher_assignments"), {
-                teacherId: teacherId, sectionId: sectionId, subjectName: subjectName, allocatedAt: serverTimestamp()
+                teacherId: teacherId, 
+                sectionId: sectionId, 
+                subjectName: subjectName, 
+                allocatedAt: serverTimestamp()
             });
             alert("Allocated successfully!");
             allocateModal.classList.add("hidden");
             document.getElementById("inpSubject").value = "";
             loadAllocations();
-        } catch(e) { console.error(e); alert("Failed to allocate."); }
+        } catch(e) { 
+            console.error(e); 
+            alert("Failed to allocate."); 
+        }
     });
 
     // ================= 7. LOAD ALLOCATIONS (WITH DELETE BUTTON) =================
@@ -297,7 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
         container.innerHTML = "";
 
         const snapshot = await getDocs(collection(db, "teacher_assignments"));
-        if(snapshot.empty) return container.innerHTML = "<p class='text-slate-400 text-xs'>No allocations yet.</p>";
+        
+        if(snapshot.empty) {
+            container.innerHTML = "<p class='text-slate-400 text-xs'>No allocations yet.</p>";
+            return;
+        }
 
         for (const docSnap of snapshot.docs) {
             const data = docSnap.data();
@@ -324,6 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (deleteBtn) {
             const allocationId = deleteBtn.getAttribute("data-id");
             const conf = confirm("Delete this allocation? The teacher won't see this class anymore.");
+            
             if (conf) {
                 try {
                     await deleteDoc(doc(db, "teacher_assignments", allocationId)); 
@@ -337,8 +374,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ================= 9. LOGOUT =================
+    // ================= 9. LOGOUT (REPLACE FIX) =================
     document.getElementById("btnLogout").addEventListener("click", () => {
-        signOut(auth).then(() => { window.location.replace("/login"); });
+        signOut(auth).then(() => { 
+            window.location.replace("/login"); 
+        });
     });
 });
