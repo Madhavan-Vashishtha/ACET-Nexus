@@ -142,25 +142,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            myAllocatedClasses = []; // Reset list
+            myAllocatedClasses = [];
 
             for (const docSnap of snapshot.docs) {
                 const data = docSnap.data();
                 const secStr = (data.sectionId || "").trim().toUpperCase();
                 
-                // Store globally to use in loadMyStudents
                 if(!myAllocatedClasses.includes(secStr)) {
                     myAllocatedClasses.push(secStr);
                 }
 
-                // Fetch Total Students Enrolled
                 let totalStudents = 0;
                 try {
                     const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", secStr));
                     totalStudents = (await getDocs(stQ)).size;
                 } catch(e) { console.error("Error counting students:", e); }
 
-                // Fetch Last Attendance Percentage (JS Sort to prevent index error)
                 let lastAttPercent = 0;
                 try {
                     const sessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr));
@@ -169,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     sessSnap.forEach(d => { if(d.data().createdAt) sessionsArray.push({id: d.id, time: d.data().createdAt.toDate().getTime()}); });
                     
                     if(sessionsArray.length > 0) {
-                        sessionsArray.sort((a,b) => b.time - a.time); // Descending
+                        sessionsArray.sort((a,b) => b.time - a.time);
                         const lastSessId = sessionsArray[0].id;
                         const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", lastSessId));
                         const attCount = (await getDocs(marksQ)).size;
@@ -193,7 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     `;
                 }
 
-                // Populate Dropdowns for Attendance, Assignments, Remarks
                 const optionHTML = `<option value="${secStr}|${data.subjectName}">${data.subjectName} (Sec: ${secStr})</option>`;
                 if(selClass) selClass.innerHTML += optionHTML;
                 if(assignSelClass) assignSelClass.innerHTML += optionHTML;
@@ -254,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch(e) { console.error("Error loading session logs:", e); }
     }
 
-    // ================= 4. LOAD MY STUDENTS (ADMIN CLONE FIX) =================
+    // ================= 4. LOAD MY STUDENTS (WITH OVERALL ATTENDANCE %) =================
     async function loadMyStudents() {
         try {
             const studentContainer = document.getElementById("myStudentsListContainer");
@@ -265,7 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            // Firebase "in" query limits to 10 items. Safe client-side fetch:
+            studentContainer.innerHTML = "<p class='text-slate-500 text-sm py-8'><i class='fa-solid fa-spinner fa-spin mr-2'></i> Fetching students and calculating attendance...</p>";
+
             const q = query(collection(db, "users"), where("role", "==", "student"));
             const snapshot = await getDocs(q);
 
@@ -279,25 +276,48 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if(filteredStudents.length === 0) {
-                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections. Make sure students updated their section.</p>";
+                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
                 return;
             }
 
-            // ADMIN TABLE EXACT HTML LAYOUT
+            // PRE-CALCULATE OVERALL ATTENDANCE % FOR EACH STUDENT
+            // 1. Fetch all sessions for my allocated classes
+            const sessQ = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId));
+            const allSessionsSnap = await getDocs(sessQ);
+            let sessionCountsBySection = {};
+            allSessionsSnap.forEach(d => {
+                const sec = (d.data().sectionId || "").toUpperCase();
+                sessionCountsBySection[sec] = (sessionCountsBySection[sec] || 0) + 1;
+            });
+
+            // 2. Fetch attendance marks for each student
+            for(let i=0; i<filteredStudents.length; i++) {
+                const st = filteredStudents[i];
+                const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", st.id));
+                const marksSnap = await getDocs(marksQ);
+                const totalSessions = sessionCountsBySection[(st.section||"").toUpperCase()] || 0;
+                const attended = marksSnap.size;
+                filteredStudents[i].attendancePct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
+            }
+
+            // RENDER HTML TABLE
             let html = `
             <div class="overflow-x-auto">
-                <table class="w-full text-left min-w-[700px]">
+                <table class="w-full text-left min-w-[800px]">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 tracking-wider">
                         <tr>
                             <th class="px-6 md:px-8 py-5 font-bold">Student Details</th>
-                            <th class="px-6 md:px-8 py-5 font-bold">Username/ID</th>
+                            <th class="px-6 md:px-8 py-5 font-bold">Username</th>
                             <th class="px-6 md:px-8 py-5 font-bold">Section</th>
+                            <th class="px-6 md:px-8 py-5 font-bold">Overall Att %</th>
                             <th class="px-6 md:px-8 py-5 font-bold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">`;
             
             filteredStudents.forEach(data => {
+                let pctColor = data.attendancePct >= 75 ? "text-emerald-600 bg-emerald-50 border-emerald-100" : (data.attendancePct >= 50 ? "text-orange-600 bg-orange-50 border-orange-100" : "text-red-600 bg-red-50 border-red-100");
+                
                 html += `
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-8 py-5">
@@ -313,10 +333,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td class="px-8 py-5">
                             <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">${data.section || 'Not Assigned'}</span>
                         </td>
+                        <td class="px-8 py-5">
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-black uppercase border shadow-sm ${pctColor}">${data.attendancePct}%</span>
+                        </td>
                         <td class="px-8 py-5 text-right">
                             <div class="flex justify-end gap-2">
-                                <button class="bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${data.id}', '_blank')">Dashboard</button>
-                                <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" data-sid="${data.id}" data-sname="${data.name}">Remark</button>
+                                <button class="bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${data.id}', '_blank')"><i class="fa-solid fa-chart-line mr-1"></i> Dashboard</button>
+                                <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" data-sid="${data.id}" data-sname="${data.name}"><i class="fa-solid fa-comment-dots mr-1"></i> Remark</button>
                             </div>
                         </td>
                     </tr>`;
@@ -339,9 +362,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if(!isViewOnly && remarkModal) {
         document.addEventListener("click", async (e) => {
-            if(e.target.classList.contains("btn-quick-remark")) {
-                const sid = e.target.getAttribute("data-sid");
-                const sname = e.target.getAttribute("data-sname");
+            if(e.target.closest(".btn-quick-remark")) {
+                const btn = e.target.closest(".btn-quick-remark");
+                const sid = btn.getAttribute("data-sid");
+                const sname = btn.getAttribute("data-sname");
                 if(remarkSelClass) remarkSelClass.innerHTML = `<option value="">Direct Selection</option>`;
                 if(remarkSelStudent) remarkSelStudent.innerHTML = `<option value="${sid}">${sname}</option>`;
                 remarkModal.classList.remove("hidden");
@@ -590,7 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 8. LOAD ASSIGNMENTS & SUBMISSIONS =================
+    // ================= 8. LOAD ASSIGNMENTS & SUBMISSIONS (SUBMITTED + PENDING) =================
     async function loadMyPostedAssignments() {
         try {
             const q = query(collection(db, "assignments"), where("teacherId", "==", currentTeacherId));
@@ -612,13 +636,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = doc.data();
                 const formattedDate = new Date(data.dueDate).toLocaleDateString();
                 
+                // Added data-sec here to fetch all students of that section later
                 container.innerHTML += `
                     <div class="flex justify-between items-center p-5 bg-white border border-slate-100 shadow-sm rounded-2xl hover:shadow-md transition mb-3">
                         <div>
                             <p class="font-bold text-slate-800">${data.title}</p>
                             <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase">Sec: <span class="text-brand">${data.sectionId}</span> | Due: <span class="text-red-500">${formattedDate}</span></p>
                         </div>
-                        <button class="btn-view-subs bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl transition" data-id="${doc.id}" data-title="${data.title}">
+                        <button class="btn-view-subs bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl transition" data-id="${doc.id}" data-title="${data.title}" data-sec="${data.sectionId}">
                             View Submissions
                         </button>
                     </div>
@@ -642,47 +667,89 @@ document.addEventListener("DOMContentLoaded", () => {
             if(e.target.closest('.btn-view-subs')) {
                 const btn = e.target.closest('.btn-view-subs');
                 const assignmentId = btn.getAttribute("data-id");
+                const sectionId = btn.getAttribute("data-sec").toUpperCase();
                 
                 if(document.getElementById("subModalTitle")) document.getElementById("subModalTitle").innerText = btn.getAttribute("data-title");
                 if(submissionsModal) submissionsModal.classList.remove("hidden");
                 if(submissionsList) submissionsList.innerHTML = "<p class='text-sm text-slate-500'><i class='fa-solid fa-spinner fa-spin mr-2'></i> Fetching submissions...</p>";
 
                 try {
+                    // 1. Fetch all students in this section
+                    const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", sectionId));
+                    const stSnap = await getDocs(stQ);
+                    let allClassStudents = [];
+                    stSnap.forEach(d => allClassStudents.push({ id: d.id, ...d.data() }));
+
+                    // 2. Fetch all submissions for this assignment
                     const subQ = query(collection(db, "assignment_submissions"), where("assignmentId", "==", assignmentId));
                     const subSnap = await getDocs(subQ);
+                    
+                    let submittedStudentIds = new Set();
+                    let submissionsData = {};
+                    
+                    subSnap.forEach(d => {
+                        const dat = d.data();
+                        submittedStudentIds.add(dat.studentId);
+                        submissionsData[dat.studentId] = { id: d.id, ...dat };
+                    });
 
                     if(submissionsList) submissionsList.innerHTML = "";
-                    if(subSnap.empty) {
-                        if(submissionsList) submissionsList.innerHTML = "<p class='text-sm text-slate-500'>No students have submitted this task yet.</p>";
-                        return;
+
+                    let submittedHTML = `<h3 class="font-black text-emerald-600 mb-4 text-xs uppercase tracking-widest border-b border-emerald-100 pb-2">Submitted (${submittedStudentIds.size})</h3>`;
+                    let pendingHTML = `<h3 class="font-black text-red-500 mb-4 mt-8 text-xs uppercase tracking-widest border-b border-red-100 pb-2">Pending (${allClassStudents.length - submittedStudentIds.size})</h3>`;
+
+                    // 3. Build HTML separating Submitted and Pending
+                    for(const student of allClassStudents) {
+                        if(submittedStudentIds.has(student.id)) {
+                            // STUDENT HAS SUBMITTED
+                            const subData = submissionsData[student.id];
+                            
+                            const remarkActionHTML = isViewOnly ? 
+                                `<p class="text-xs text-orange-500 font-bold mt-2"><i class="fa-solid fa-lock"></i> Remarks disabled in View Mode</p>` :
+                                `<div class="flex gap-2 mt-4">
+                                    <input type="text" id="remark-${subData.id}" placeholder="Give a remark or grade..." class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-brand">
+                                    <button class="btn-save-remark bg-brand text-white font-bold text-xs px-5 py-2 rounded-xl hover:bg-emerald-600 shadow-sm transition" data-subid="${subData.id}" data-studentid="${student.id}">
+                                        Send Remark
+                                    </button>
+                                </div>`;
+
+                            const fileHTML = subData.fileUrl ? 
+                                `<div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                                    <span class="text-xs font-bold text-blue-700"><i class="fa-solid fa-paperclip mr-1"></i> File Attached</span>
+                                    <a href="${subData.fileUrl}" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition font-bold shadow-sm flex items-center gap-1"><i class="fa-solid fa-up-right-from-square"></i> Open File</a>
+                                </div>` : '';
+
+                            submittedHTML += `
+                                <div class="p-5 border border-slate-100 rounded-2xl bg-white shadow-sm mb-3">
+                                    <div class="flex justify-between items-center mb-3 border-b border-slate-50 pb-2">
+                                        <p class="font-bold text-sm text-slate-800"><i class="fa-solid fa-user-graduate text-emerald-500 mr-2"></i>${student.name}</p>
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded">Submitted</span>
+                                    </div>
+                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-600 break-words shadow-inner">
+                                        ${subData.answer || "<i class='text-slate-400'>No text response provided.</i>"}
+                                    </div>
+                                    ${fileHTML}
+                                    ${remarkActionHTML}
+                                </div>
+                            `;
+                        } else {
+                            // STUDENT HAS NOT SUBMITTED YET (PENDING)
+                            pendingHTML += `
+                                <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 shadow-sm mb-3 flex justify-between items-center opacity-75 hover:opacity-100 transition">
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-800"><i class="fa-solid fa-user-graduate text-slate-400 mr-2"></i>${student.name}</p>
+                                        <p class="text-[10px] text-slate-500 uppercase font-bold mt-1">Pending Task Submission</p>
+                                    </div>
+                                    <span class="text-xs font-black text-red-500 bg-red-50 px-3 py-1 rounded-lg border border-red-100">Not Submitted</span>
+                                </div>
+                            `;
+                        }
                     }
 
-                    for(const subDoc of subSnap.docs) {
-                        const subData = subDoc.data();
-                        const userDoc = await getDoc(doc(db, "users", subData.studentId));
-                        const studentName = userDoc.exists() ? userDoc.data().name : "Unknown Student";
-                        
-                        const remarkActionHTML = isViewOnly ? 
-                            `<p class="text-xs text-orange-500 font-bold mt-2"><i class="fa-solid fa-lock"></i> Remarks disabled in View Mode</p>` :
-                            `<div class="flex gap-2 mt-4">
-                                <input type="text" id="remark-${subDoc.id}" placeholder="Give a remark or grade..." class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-brand">
-                                <button class="btn-save-remark bg-brand text-white font-bold text-xs px-5 py-2 rounded-xl hover:bg-emerald-600 shadow-sm transition" data-subid="${subDoc.id}" data-studentid="${subData.studentId}">
-                                    Send Remark
-                                </button>
-                            </div>`;
-
-                        if(submissionsList) submissionsList.innerHTML += `
-                            <div class="p-5 border border-slate-100 rounded-2xl bg-white shadow-sm mb-3">
-                                <div class="flex justify-between items-center mb-3 border-b border-slate-50 pb-2">
-                                    <p class="font-bold text-sm text-slate-800"><i class="fa-solid fa-user-graduate text-brand mr-2"></i>${studentName}</p>
-                                </div>
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-600 break-words shadow-inner">
-                                    ${subData.answer}
-                                </div>
-                                ${remarkActionHTML}
-                            </div>
-                        `;
+                    if(submissionsList) {
+                        submissionsList.innerHTML = submittedHTML + pendingHTML;
                     }
+
                 } catch(err) {
                     console.error("Error fetching submissions:", err);
                     if(submissionsList) submissionsList.innerHTML = "<p class='text-red-500 text-sm'>Error fetching submissions.</p>";

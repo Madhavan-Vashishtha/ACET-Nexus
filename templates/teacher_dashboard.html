@@ -91,12 +91,14 @@
                 </div>
             </section>
 
-            <section id="view-students" class="tab-content">
+            <section id="view-students" class="tab-content" style="display: none;">
                 <div class="flex justify-between items-center mb-8 animate-fade-in-up">
                     <h1 class="text-3xl font-black text-slate-800 tracking-tight">My Students</h1>
                 </div>
                 <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                    <p class="text-slate-500 text-sm text-center py-10"><i class="fa-solid fa-tools text-3xl mb-4 text-slate-300 block"></i> Manual Attendance Module will be integrated here soon.</p>
+                    <div id="myStudentsListContainer" class="w-full">
+                        <p class="text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading students data...</p>
+                    </div>
                 </div>
             </section>
 
