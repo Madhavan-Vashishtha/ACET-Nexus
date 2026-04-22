@@ -142,9 +142,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            myAllocatedClasses = []; // Reset list
+
             for (const docSnap of snapshot.docs) {
                 const data = docSnap.data();
-                const secStr = data.sectionId.trim().toUpperCase();
+                const secStr = (data.sectionId || "").trim().toUpperCase();
                 
                 // Store globally to use in loadMyStudents
                 if(!myAllocatedClasses.includes(secStr)) {
@@ -158,15 +160,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     totalStudents = (await getDocs(stQ)).size;
                 } catch(e) { console.error("Error counting students:", e); }
 
-                // Fetch Last Attendance Percentage
+                // Fetch Last Attendance Percentage (JS Sort to prevent index error)
                 let lastAttPercent = 0;
                 try {
-                    const lastSessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr), orderBy("createdAt", "desc"), limit(1));
-                    const lastSessSnap = await getDocs(lastSessQ);
+                    const sessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr));
+                    const sessSnap = await getDocs(sessQ);
+                    let sessionsArray = [];
+                    sessSnap.forEach(d => { if(d.data().createdAt) sessionsArray.push({id: d.id, time: d.data().createdAt.toDate().getTime()}); });
                     
-                    if(!lastSessSnap.empty) {
-                        const sessId = lastSessSnap.docs[0].id;
-                        const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", sessId));
+                    if(sessionsArray.length > 0) {
+                        sessionsArray.sort((a,b) => b.time - a.time); // Descending
+                        const lastSessId = sessionsArray[0].id;
+                        const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", lastSessId));
                         const attCount = (await getDocs(marksQ)).size;
                         lastAttPercent = totalStudents > 0 ? Math.round((attCount/totalStudents)*100) : 0;
                     }
@@ -200,28 +205,35 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 3. RECENT SESSIONS WITH % =================
+    // ================= 3. RECENT SESSIONS WITH % (JS SORTED) =================
     async function loadRecentSessionsLog() {
         try {
             const container = document.getElementById("recentSessionsLog");
             if(!container) return;
             container.innerHTML = "";
 
-            const q = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId), orderBy("createdAt", "desc"), limit(6));
+            const q = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId));
             const snapshot = await getDocs(q);
 
             if(snapshot.empty) {
                 container.innerHTML = "<p class='text-slate-500 text-sm'>No sessions conducted yet.</p>"; return;
             }
 
-            for (const docSnap of snapshot.docs) {
+            let allSessions = [];
+            snapshot.forEach(docSnap => {
                 const data = docSnap.data();
-                const dateStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'N/A';
+                if(data.createdAt) allSessions.push({ id: docSnap.id, ...data, time: data.createdAt.toDate().getTime() });
+            });
+            allSessions.sort((a,b) => b.time - a.time);
+            const topSessions = allSessions.slice(0, 6);
+
+            for (const data of topSessions) {
+                const dateStr = new Date(data.time).toLocaleString();
                 
                 const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", (data.sectionId||"").toUpperCase()));
                 const totalSt = (await getDocs(stQ)).size;
                 
-                const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", docSnap.id));
+                const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", data.id));
                 const attCount = (await getDocs(marksQ)).size;
                 
                 let pct = totalSt > 0 ? Math.round((attCount/totalSt)*100) : 0;
@@ -242,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch(e) { console.error("Error loading session logs:", e); }
     }
 
-    // ================= 4. LOAD MY STUDENTS (ADMIN EXACT DESIGN) =================
+    // ================= 4. LOAD MY STUDENTS (ADMIN CLONE FIX) =================
     async function loadMyStudents() {
         try {
             const studentContainer = document.getElementById("myStudentsListContainer");
@@ -253,28 +265,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            const q = query(collection(db, "users"), where("role", "==", "student"), where("section", "in", myAllocatedClasses));
+            // Firebase "in" query limits to 10 items. Safe client-side fetch:
+            const q = query(collection(db, "users"), where("role", "==", "student"));
             const snapshot = await getDocs(q);
 
-            if(snapshot.empty) {
-                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
+            let filteredStudents = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const sec = (data.section || "").trim().toUpperCase();
+                if(myAllocatedClasses.includes(sec)) {
+                    filteredStudents.push({ id: docSnap.id, ...data });
+                }
+            });
+
+            if(filteredStudents.length === 0) {
+                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections. Make sure students updated their section.</p>";
                 return;
             }
 
+            // ADMIN TABLE EXACT HTML LAYOUT
             let html = `
             <div class="overflow-x-auto">
                 <table class="w-full text-left min-w-[700px]">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 tracking-wider">
                         <tr>
                             <th class="px-6 md:px-8 py-5 font-bold">Student Details</th>
+                            <th class="px-6 md:px-8 py-5 font-bold">Username/ID</th>
                             <th class="px-6 md:px-8 py-5 font-bold">Section</th>
                             <th class="px-6 md:px-8 py-5 font-bold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">`;
             
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data();
+            filteredStudents.forEach(data => {
                 html += `
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-8 py-5">
@@ -286,13 +309,14 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </div>
                             </div>
                         </td>
+                        <td class="px-8 py-5 text-sm font-bold text-slate-600">${data.username || '-'}</td>
                         <td class="px-8 py-5">
-                            <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">${data.section || 'Not Assigned'}</span>
+                            <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">${data.section || 'Not Assigned'}</span>
                         </td>
                         <td class="px-8 py-5 text-right">
                             <div class="flex justify-end gap-2">
-                                <button class="bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${docSnap.id}', '_blank')">Dashboard</button>
-                                <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" data-sid="${docSnap.id}" data-sname="${data.name}">Remark</button>
+                                <button class="bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${data.id}', '_blank')">Dashboard</button>
+                                <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" data-sid="${data.id}" data-sname="${data.name}">Remark</button>
                             </div>
                         </td>
                     </tr>`;
