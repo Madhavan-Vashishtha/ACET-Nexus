@@ -308,9 +308,14 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+        // 🔥 Bulletproof Global Logout Function (Fix for mobile menu click block)
+        window.performHomeLogout = async function() {
+            await signOut(auth);
+            window.location.reload();
+        };
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Fetch user data
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 let userRole = "student"; 
                 let avatarUrl = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=eff6ff&color=1d4ed8`;
@@ -332,45 +337,38 @@
                     btnGetStarted.innerText = "Go to Dashboard";
                 }
 
-                // 🔥 DESKTOP PROFILE & LOGOUT FIX (Perfect Alignment & Premium CSS)
+                // 🔥 PERFECT ALIGNMENT: Profile Left, Logout Right (Row Layout)
                 const mainLoginBtn = document.getElementById("mainLoginBtn");
                 if(mainLoginBtn) {
                     mainLoginBtn.outerHTML = `
-                        <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="display: flex; flex-direction: row; align-items: center; gap: 15px; justify-content: flex-end;">
                             <a href="/profile" style="display:flex; align-items:center; text-decoration:none;" title="My Profile">
                                 <img src="${avatarUrl}" style="width:42px; height:42px; border-radius:50%; border:2px solid #10b981; box-shadow:0 2px 10px rgba(0,0,0,0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
                             </a>
-                            <button id="desktopLogoutBtn" style="display: none; align-items: center; gap: 8px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid rgba(239, 68, 68, 0.2); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.backgroundColor='rgba(239, 68, 68, 0.1)'">
+                            <button id="desktopLogoutBtn" onclick="window.performHomeLogout()" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; font-family: inherit; font-weight: 700; font-size: 15px; padding: 10px 18px; cursor: pointer; transition: all 0.3s ease;">
                                 <i class="fa-solid fa-right-from-bracket"></i> Logout
                             </button>
                         </div>
                     `;
 
-                    // Only show logout on Desktop
-                    if(window.innerWidth > 992) {
-                        document.getElementById("desktopLogoutBtn").style.display = "flex";
-                        document.getElementById("desktopLogoutBtn").addEventListener("click", async () => {
-                            await signOut(auth); window.location.reload();
-                        });
+                    // Hide desktop button on mobile to avoid double buttons
+                    if(window.innerWidth <= 992) {
+                        const deskBtn = document.getElementById("desktopLogoutBtn");
+                        if(deskBtn) deskBtn.style.display = "none";
                     }
                 }
 
-                // 🔥 MOBILE MENU LOGOUT (Premium Design)
+                // 🔥 MOBILE MENU LOGOUT
                 const navLinks = document.querySelector(".nav-links");
                 if (navLinks && window.innerWidth <= 992 && !document.getElementById("homeLogoutBtn")) {
                     const logoutLi = document.createElement("li");
                     logoutLi.style.width = "100%"; 
                     logoutLi.innerHTML = `
-                        <button id="homeLogoutBtn" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px 20px; margin-top: 15px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; font-family: inherit; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
+                        <button onclick="window.performHomeLogout()" id="homeLogoutBtn" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px 20px; margin-top: 15px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; font-family: inherit; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
                             <i class="fa-solid fa-right-from-bracket"></i> Logout
                         </button>
                     `;
                     navLinks.appendChild(logoutLi);
-                    
-                    const btn = document.getElementById("homeLogoutBtn");
-                    btn.addEventListener("click", async (e) => {
-                        e.preventDefault(); await signOut(auth); window.location.reload(); 
-                    });
                 }
             }
         });

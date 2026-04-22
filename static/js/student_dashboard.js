@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
 
-    // ================= 0. PREMIUM TAB SWITCHING LOGIC (FIXED) =================
+    // ================= 0. TAB SWITCHING LOGIC =================
     const navBtns = document.querySelectorAll(".nav-btn");
     const views = document.querySelectorAll(".tab-content");
 
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             views.forEach(v => {
                 v.classList.remove("active");
-                v.style.display = "none"; // Explicit hide
+                v.style.display = "none";
             });
 
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
@@ -37,10 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const targetView = document.getElementById(targetId);
             if(targetView) {
                 targetView.classList.add("active");
-                targetView.style.display = "block"; // Explicit show
+                targetView.style.display = "block";
             }
             
-            // Auto close mobile menu if open
             const aside = document.querySelector("aside");
             if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
@@ -54,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ================= 1. AUTHENTICATE & IMPERSONATION =================
+    // ================= 1. AUTHENTICATE & ISOLATED LOAD =================
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const loggedInDoc = await getDoc(doc(db, "users", user.uid));
@@ -65,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     isViewOnly = true;
                     currentStudentId = viewAsId;
                     setupImpersonationUI();
-                    await loadStudentData(viewAsId);
+                    await safeLoadStudentData(viewAsId);
                 } else {
                     alert("Unauthorized Access!");
                     window.location.href = "/login";
@@ -73,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 if (loggedInRole === "student") {
                     currentStudentId = user.uid;
-                    await loadStudentData(user.uid);
+                    await safeLoadStudentData(user.uid);
                 } else {
                     window.location.href = "/login";
                 }
@@ -94,37 +93,40 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function loadStudentData(targetUid) {
-        const userDoc = await getDoc(doc(db, "users", targetUid));
-        if(userDoc.exists()) {
-            const data = userDoc.data();
-            const fullName = data.name || "Student";
-            
-            document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
-            studentSection = data.section ? data.section.toUpperCase() : "Unassigned";
-            document.getElementById("studentSectionBadge").innerText = `SEC: ${studentSection}`;
-            
-            if(document.getElementById("currentDateDisplay")) {
-                document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-            }
+    // 🔥 ISOLATED LOADER: Prevents one missing data block from crashing the whole UI
+    async function safeLoadStudentData(targetUid) {
+        try {
+            const userDoc = await getDoc(doc(db, "users", targetUid));
+            if(userDoc.exists()) {
+                const data = userDoc.data();
+                const fullName = data.name || "Student";
+                
+                if(document.getElementById("welcomeText")) document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
+                
+                currentStudentSection = data.section ? data.section.toUpperCase() : "Unassigned";
+                if(document.getElementById("studentSectionBadge")) document.getElementById("studentSectionBadge").innerText = `SEC: ${currentStudentSection}`;
+                
+                if(document.getElementById("currentDateDisplay")) {
+                    document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+                }
 
-            const nameParts = fullName.trim().split(/\s+/);
-            let initials = "U";
-            if (nameParts.length === 1) {
-                initials = nameParts[0][0].toUpperCase();
-            } else if (nameParts.length >= 2) {
-                initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                const nameParts = fullName.trim().split(/\s+/);
+                let initials = "U";
+                if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
+                else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                if(document.getElementById("userAvatarInitials")) document.getElementById("userAvatarInitials").innerText = initials;
+                
+                setupEditableTarget();
+
+                // Run independent blocks safely
+                try { listenForLiveSession(); } catch(e) { console.error("Live Session Error:", e); }
+                try { await loadMyHistoryAndGraph(); } catch(e) { console.error("History/Graph Error:", e); }
+                try { await loadMyAssignments(); } catch(e) { console.error("Assignments Error:", e); }
+                try { await loadMyRemarks(); } catch(e) { console.error("Remarks Error:", e); }
+                try { await loadMySubjects(); } catch(e) { console.error("Subjects Error:", e); }
             }
-            
-            const avatarEl = document.getElementById("userAvatarInitials");
-            if(avatarEl) avatarEl.innerText = initials;
-            
-            listenForLiveSession();
-            await loadMyHistoryAndGraph(); 
-            await loadMyAssignments();
-            await loadMyRemarks();
-            await loadMySubjects(); 
-            setupEditableTarget();
+        } catch (error) {
+            console.error("Critical User Load Error:", error);
         }
     }
 
@@ -133,12 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById("mySubjectsContainer");
         if(!container) return;
 
-        if (studentSection === "Unassigned") {
+        if (currentStudentSection === "Unassigned") {
             container.innerHTML = "<p class='text-slate-500 text-sm'>You are not assigned to a section yet. Update your profile.</p>";
             return;
         }
 
-        const q = query(collection(db, "teacher_assignments"), where("sectionId", "==", studentSection));
+        const q = query(collection(db, "teacher_assignments"), where("sectionId", "==", currentStudentSection));
         const snapshot = await getDocs(q);
         container.innerHTML = "";
 
@@ -168,8 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ================= 3. LIVE SESSION =================
     function listenForLiveSession() {
-        if(studentSection === "Unassigned") return;
-        const sessionQuery = query(collection(db, "attendance_sessions"), where("sectionId", "==", studentSection), where("isActive", "==", true));
+        if(currentStudentSection === "Unassigned") return;
+        const sessionQuery = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection), where("isActive", "==", true));
 
         onSnapshot(sessionQuery, (snapshot) => {
             const banner = document.getElementById("liveSessionBanner");
@@ -212,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 await addDoc(collection(db, "attendance_marks"), {
-                    sessionId: activeSessionId, studentId: currentStudentId, sectionId: studentSection, timestamp: serverTimestamp(), status: "Present"
+                    sessionId: activeSessionId, studentId: currentStudentId, sectionId: currentStudentSection, timestamp: serverTimestamp(), status: "Present"
                 });
 
                 btnMarkPresent.classList.replace("bg-white", "bg-green-500");
@@ -229,56 +231,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ================= 5. HISTORY, GRAPHS & LOGS =================
     async function loadMyHistoryAndGraph() {
-        if(studentSection === "Unassigned") return;
+        if(currentStudentSection === "Unassigned") return;
 
-        try {
-            // Calculate Totals
-            const totalSessionsSnap = await getDocs(query(collection(db, "attendance_sessions"), where("sectionId", "==", studentSection)));
-            const totalClassesHeld = totalSessionsSnap.size;
-            
-            if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = totalClassesHeld;
+        // Calculate Totals
+        const totalSessionsSnap = await getDocs(query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection)));
+        const totalClassesHeld = totalSessionsSnap.size;
+        
+        if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = totalClassesHeld;
 
-            const myAttendanceSnap = await getDocs(query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc")));
-            const classesAttended = myAttendanceSnap.size;
+        const myAttendanceSnap = await getDocs(query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc")));
+        const classesAttended = myAttendanceSnap.size;
 
-            // Load Recent Logs
-            const container = document.getElementById("recentActivityContainer") || document.getElementById("myHistoryContainer");
-            if(container) {
-                container.innerHTML = "";
-                if(myAttendanceSnap.empty) {
-                    container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
-                } else {
-                    myAttendanceSnap.forEach(doc => {
-                        const data = doc.data();
-                        const dateObj = data.timestamp ? new Date(data.timestamp.toDate()) : new Date();
-                        const dateStr = dateObj.toLocaleString();
-                        container.innerHTML += `
-                            <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
-                                    <div>
-                                        <p class="font-bold text-slate-800">${data.subject || 'Lecture'}</p>
-                                        <p class="text-xs text-slate-500">${dateStr}</p>
-                                    </div>
+        // Load Recent Logs
+        const container1 = document.getElementById("recentActivityContainer");
+        const container2 = document.getElementById("myHistoryContainer");
+        
+        const renderLogs = (container) => {
+            if(!container) return;
+            container.innerHTML = "";
+            if(myAttendanceSnap.empty) {
+                container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
+            } else {
+                myAttendanceSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const dateObj = data.timestamp ? new Date(data.timestamp.toDate()) : new Date();
+                    const dateStr = dateObj.toLocaleString();
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm hover:shadow-md transition">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
+                                <div>
+                                    <p class="font-bold text-slate-800">${data.subject || 'Lecture'}</p>
+                                    <p class="text-xs text-slate-500">${dateStr}</p>
                                 </div>
-                                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">PRESENT</span>
                             </div>
-                        `;
-                    });
-                }
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">PRESENT</span>
+                        </div>
+                    `;
+                });
             }
+        };
 
-            // Calculate Percentage
-            let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
-            let missedClasses = totalClassesHeld > 0 ? totalClassesHeld - classesAttended : 0;
+        renderLogs(container1);
+        renderLogs(container2);
 
-            if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
-            if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
-            
-            drawChart(classesAttended, missedClasses);
-            drawDummyLineChart(); 
+        // Calculate Percentage
+        let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
+        let missedClasses = totalClassesHeld > 0 ? totalClassesHeld - classesAttended : 0;
 
-        } catch (e) { console.error("Error loading history: ", e); }
+        if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
+        if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
+        
+        drawChart(classesAttended, missedClasses);
+        drawDummyLineChart(); 
     }
 
     function drawChart(attended, missed) {
@@ -341,12 +346,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById("myAssignmentsContainer");
         if(!container) return;
 
-        if(studentSection === "Unassigned") {
+        if(currentStudentSection === "Unassigned") {
             container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
             return;
         }
 
-        const snapshot = await getDocs(query(collection(db, "assignments"), where("sectionId", "==", studentSection)));
+        const snapshot = await getDocs(query(collection(db, "assignments"), where("sectionId", "==", currentStudentSection)));
         container.innerHTML = "";
         
         let activeAssignmentsCount = 0;
@@ -413,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(!answerText || !currentAssignmentIdToSubmit) return;
 
             await addDoc(collection(db, "assignment_submissions"), {
-                assignmentId: currentAssignmentIdToSubmit, studentId: currentStudentId, sectionId: studentSection, answer: answerText, submittedAt: serverTimestamp()
+                assignmentId: currentAssignmentIdToSubmit, studentId: currentStudentId, sectionId: currentStudentSection, answer: answerText, submittedAt: serverTimestamp()
             });
 
             submitModal.classList.add("hidden");
