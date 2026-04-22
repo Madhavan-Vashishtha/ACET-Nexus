@@ -22,12 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const activeTabId = activeTab ? activeTab.id : defaultTabId;
             const targetId = btn.getAttribute("data-target");
 
-            if (activeTabId === targetId) return;
+            if (activeTabId === targetId) {
+                return;
+            }
 
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
+
             views.forEach(v => { 
                 v.classList.remove("active"); 
                 v.style.display = "none"; 
@@ -37,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
             const targetView = document.getElementById(targetId);
-            if(targetView) { 
+            if (targetView) { 
                 targetView.classList.add("active"); 
                 targetView.style.display = "block"; 
             }
@@ -80,13 +83,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function setupImpersonationUI() {
-        if(document.getElementById("btnOpenSessionModal")) {
+        if (document.getElementById("btnOpenSessionModal")) {
             document.getElementById("btnOpenSessionModal").classList.add("hidden");
         }
-        if(document.getElementById("btnOpenAssign")) {
+        if (document.getElementById("btnOpenAssign")) {
             document.getElementById("btnOpenAssign").classList.add("hidden");
         }
-        if(document.getElementById("btnOpenGlobalRemark")) {
+        if (document.getElementById("btnOpenGlobalRemark")) {
             document.getElementById("btnOpenGlobalRemark").classList.add("hidden");
         }
     }
@@ -95,15 +98,15 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const userDoc = await getDoc(doc(db, "users", targetUid));
             
-            if(userDoc.exists()) {
+            if (userDoc.exists()) {
                 const data = userDoc.data();
                 const fullName = data.name || "Professor";
                 
-                if(document.getElementById("welcomeText")) {
+                if (document.getElementById("welcomeText")) {
                     document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
                 }
                 
-                if(document.getElementById("currentDateDisplay")) {
+                if (document.getElementById("currentDateDisplay")) {
                     document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
                 }
 
@@ -115,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
                 }
                 
-                if(document.getElementById("userAvatarInitials")) {
+                if (document.getElementById("userAvatarInitials")) {
                     document.getElementById("userAvatarInitials").innerText = initials;
                 }
 
@@ -140,17 +143,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const selClass = document.getElementById("selMyClass");
             const assignSelClass = document.getElementById("assignSelClass");
             
-            if(container) container.innerHTML = "";
-            if(remarkSelClass) remarkSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
-            if(selClass) selClass.innerHTML = '<option value="">-- Choose Class --</option>';
-            if(assignSelClass) assignSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
+            if (container) {
+                container.innerHTML = "";
+            }
+            if (remarkSelClass) {
+                remarkSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
+            }
+            if (selClass) {
+                selClass.innerHTML = '<option value="">-- Choose Class --</option>';
+            }
+            if (assignSelClass) {
+                assignSelClass.innerHTML = '<option value="">-- Choose Class --</option>';
+            }
             
-            if(document.getElementById("statClasses")) {
+            if (document.getElementById("statClasses")) {
                 document.getElementById("statClasses").innerText = snapshot.size;
             }
 
-            if(snapshot.empty) {
-                if(container) container.innerHTML = "<p class='text-slate-500 col-span-2'>No classes assigned to you yet.</p>";
+            if (snapshot.empty) {
+                if (container) {
+                    container.innerHTML = "<p class='text-slate-500 col-span-2'>No classes assigned to you yet.</p>";
+                }
                 return;
             }
 
@@ -160,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = docSnap.data();
                 const secStr = (data.sectionId || "").trim().toUpperCase();
                 
-                if(!myAllocatedClasses.includes(secStr)) {
+                if (!myAllocatedClasses.includes(secStr)) {
                     myAllocatedClasses.push(secStr);
                 }
 
@@ -168,7 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", secStr));
                     totalStudents = (await getDocs(stQ)).size;
-                } catch(e) { console.error("Error counting students:", e); }
+                } catch(e) {
+                    console.error("Error counting students:", e);
+                }
 
                 let lastAttPercent = 0;
                 try {
@@ -176,21 +191,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     const sessSnap = await getDocs(sessQ);
                     let sessionsArray = [];
                     sessSnap.forEach(d => { 
-                        if(d.data().createdAt) {
+                        if (d.data().createdAt) {
                             sessionsArray.push({id: d.id, time: d.data().createdAt.toDate().getTime()}); 
                         }
                     });
                     
-                    if(sessionsArray.length > 0) {
+                    if (sessionsArray.length > 0) {
                         sessionsArray.sort((a,b) => b.time - a.time);
                         const lastSessId = sessionsArray[0].id;
                         const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", lastSessId));
                         const attCount = (await getDocs(marksQ)).size;
                         lastAttPercent = totalStudents > 0 ? Math.round((attCount/totalStudents)*100) : 0;
                     }
-                } catch(e) { console.error("Error calculating percent:", e); }
+                } catch(e) {
+                    console.error("Error calculating percent:", e);
+                }
 
-                if(container) {
+                if (container) {
                     container.innerHTML += `
                         <div class="p-6 border border-slate-100 bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.03)] hover:-translate-y-1 transition-transform">
                             <div class="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
@@ -207,13 +224,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const optionHTML = `<option value="${secStr}|${data.subjectName}">${data.subjectName} (Sec: ${secStr})</option>`;
-                if(selClass) selClass.innerHTML += optionHTML;
-                if(assignSelClass) assignSelClass.innerHTML += optionHTML;
-                if(remarkSelClass) remarkSelClass.innerHTML += `<option value="${secStr}">${secStr}</option>`;
+                if (selClass) {
+                    selClass.innerHTML += optionHTML;
+                }
+                if (assignSelClass) {
+                    assignSelClass.innerHTML += optionHTML;
+                }
+                if (remarkSelClass) {
+                    remarkSelClass.innerHTML += `<option value="${secStr}">${secStr}</option>`;
+                }
             }
         } catch (e) {
             console.error("Error loading classes:", e);
-            if(document.getElementById("myClassesContainer")) {
+            if (document.getElementById("myClassesContainer")) {
                 document.getElementById("myClassesContainer").innerHTML = "<p class='text-red-500'>Error loading classes.</p>";
             }
         }
@@ -223,13 +246,15 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadRecentSessionsLog() {
         try {
             const container = document.getElementById("recentSessionsLog");
-            if(!container) return;
+            if (!container) {
+                return;
+            }
             container.innerHTML = "";
 
             const q = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId));
             const snapshot = await getDocs(q);
 
-            if(snapshot.empty) {
+            if (snapshot.empty) {
                 container.innerHTML = "<p class='text-slate-500 text-sm'>No sessions conducted yet.</p>"; 
                 return;
             }
@@ -237,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let allSessions = [];
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
-                if(data.createdAt) {
+                if (data.createdAt) {
                     allSessions.push({ id: docSnap.id, ...data, time: data.createdAt.toDate().getTime() });
                 }
             });
@@ -268,16 +293,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 `;
             }
-        } catch(e) { console.error("Error loading session logs:", e); }
+        } catch (e) {
+            console.error("Error loading session logs:", e);
+        }
     }
 
-    // ================= 4. LOAD MY STUDENTS (WITH OVERALL ATTENDANCE %) =================
+    // ================= 4. LOAD MY STUDENTS (TEACHER-SPECIFIC ATTENDANCE %) =================
     async function loadMyStudents() {
         try {
             const studentContainer = document.getElementById("myStudentsListContainer");
-            if(!studentContainer) return;
+            if (!studentContainer) {
+                return;
+            }
 
-            if(myAllocatedClasses.length === 0) {
+            if (myAllocatedClasses.length === 0) {
                 studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No sections allocated to you yet.</p>";
                 return;
             }
@@ -291,17 +320,17 @@ document.addEventListener("DOMContentLoaded", () => {
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
                 const sec = (data.section || "").trim().toUpperCase();
-                if(myAllocatedClasses.includes(sec)) {
+                if (myAllocatedClasses.includes(sec)) {
                     filteredStudents.push({ id: docSnap.id, ...data });
                 }
             });
 
-            if(filteredStudents.length === 0) {
+            if (filteredStudents.length === 0) {
                 studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
                 return;
             }
 
-            // PRE-CALCULATE OVERALL ATTENDANCE % FOR EACH STUDENT BASED ON THIS TEACHER'S CLASSES
+            // Fetch ONLY sessions created by current teacher
             const sessQ = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId));
             const allSessionsSnap = await getDocs(sessQ);
             
@@ -314,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionCountsBySection[sec] = (sessionCountsBySection[sec] || 0) + 1;
             });
 
-            for(let i=0; i<filteredStudents.length; i++) {
+            for (let i=0; i<filteredStudents.length; i++) {
                 const st = filteredStudents[i];
                 const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", st.id));
                 const marksSnap = await getDocs(marksQ);
@@ -323,7 +352,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 let attendedMyClasses = 0;
                 marksSnap.forEach(m => {
-                    if(mySessionIds.has(m.data().sessionId)) {
+                    // Check if student's mark matches ONE OF THIS TEACHER'S SESSIONS
+                    if (mySessionIds.has(m.data().sessionId)) {
                         attendedMyClasses++;
                     }
                 });
@@ -331,7 +361,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 filteredStudents[i].attendancePct = totalSessions > 0 ? Math.round((attendedMyClasses/totalSessions)*100) : 0;
             }
 
-            // RENDER HTML TABLE
             let html = `
             <div class="overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
@@ -340,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <th class="px-6 md:px-8 py-5 font-bold">Student Details</th>
                             <th class="px-6 md:px-8 py-5 font-bold">Username</th>
                             <th class="px-6 md:px-8 py-5 font-bold">Section</th>
-                            <th class="px-6 md:px-8 py-5 font-bold">My Att %</th>
+                            <th class="px-6 md:px-8 py-5 font-bold">Overall Att %</th>
                             <th class="px-6 md:px-8 py-5 font-bold text-right">Actions</th>
                         </tr>
                     </thead>
@@ -380,18 +409,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (e) { 
             console.error("Error loading students:", e); 
-            if(document.getElementById("myStudentsListContainer")) {
+            if (document.getElementById("myStudentsListContainer")) {
                 document.getElementById("myStudentsListContainer").innerHTML = "<p class='text-red-500 text-center py-10'>Error loading students.</p>";
             }
         }
     }
 
-    // ================= 5, 6, 7, 8. GLOBAL EVENT DELEGATION =================
-    // Isse event tabhi fire honge jab DOM proper update ho jayega.
+    // ================= 5, 6, 7, 8. GLOBAL EVENT DELEGATION (ALL MODALS & ACTIONS) =================
     document.addEventListener("click", async (e) => {
         
-        // --- REMARKS MODAL FROM TABLE ---
+        // --- 5. QUICK REMARK (FROM TABLE) ---
         if (e.target.closest(".btn-quick-remark")) {
+            e.preventDefault();
             const btn = e.target.closest(".btn-quick-remark");
             const sid = btn.getAttribute("data-sid");
             const sname = btn.getAttribute("data-sname");
@@ -400,29 +429,47 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!isViewOnly && rModal) {
                 const rSelClass = document.getElementById("remarkSelClass");
                 const rSelStudent = document.getElementById("remarkSelStudent");
-                if(rSelClass) rSelClass.innerHTML = `<option value="">Direct Selection</option>`;
-                if(rSelStudent) rSelStudent.innerHTML = `<option value="${sid}">${sname}</option>`;
+                if (rSelClass) {
+                    rSelClass.innerHTML = `<option value="">Direct Selection</option>`;
+                }
+                if (rSelStudent) {
+                    rSelStudent.innerHTML = `<option value="${sid}">${sname}</option>`;
+                }
                 rModal.classList.remove("hidden");
             }
         }
 
-        // --- GLOBAL REMARK MODAL OPEN/CLOSE ---
+        // --- GLOBAL REMARK (FROM HEADER) ---
         if (e.target.closest("#btnOpenGlobalRemark")) {
+            e.preventDefault();
             if (!isViewOnly) {
                 const rModal = document.getElementById("globalRemarkModal");
                 const rSelStudent = document.getElementById("remarkSelStudent");
-                if(rSelStudent) rSelStudent.innerHTML = '<option value="">Select Class First</option>';
-                if(rModal) rModal.classList.remove("hidden");
+                if (rSelStudent) {
+                    rSelStudent.innerHTML = '<option value="">Select Class First</option>';
+                }
+                if (rModal) {
+                    rModal.classList.remove("hidden");
+                }
             }
         }
+        
+        // --- CLOSE REMARK MODAL ---
         if (e.target.closest("#btnCloseGlobalRemark")) {
+            e.preventDefault();
             const rModal = document.getElementById("globalRemarkModal");
-            if (rModal) rModal.classList.add("hidden");
+            if (rModal) {
+                rModal.classList.add("hidden");
+            }
         }
 
         // --- SUBMIT GLOBAL REMARK ---
         if (e.target.closest("#btnSubmitGlobalRemark")) {
-            if(isViewOnly) return;
+            e.preventDefault();
+            if (isViewOnly) {
+                return;
+            }
+            
             const submitBtn = e.target.closest("#btnSubmitGlobalRemark");
             const rSelStudent = document.getElementById("remarkSelStudent");
             const remarkTextEl = document.getElementById("remarkText");
@@ -430,7 +477,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const sid = rSelStudent ? rSelStudent.value : null;
             const text = remarkTextEl ? remarkTextEl.value.trim() : "";
             
-            if(!sid || !text) {
+            if (!sid || !text) {
                 alert("Select student and type remark!");
                 return;
             }
@@ -446,9 +493,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     timestamp: serverTimestamp() 
                 });
                 alert("Remark sent successfully!");
+                
                 const rModal = document.getElementById("globalRemarkModal");
-                if(rModal) rModal.classList.add("hidden"); 
-                if(remarkTextEl) remarkTextEl.value = "";
+                if (rModal) {
+                    rModal.classList.add("hidden"); 
+                }
+                if (remarkTextEl) {
+                    remarkTextEl.value = "";
+                }
             } catch(error) { 
                 console.error("Error sending remark:", error);
                 alert("Failed to send remark."); 
@@ -458,107 +510,110 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // --- SUBMIT SPECIFIC ASSIGNMENT REMARK ---
-        if (e.target.closest('.btn-save-remark')) {
-            if(isViewOnly) return;
-            const btn = e.target.closest('.btn-save-remark');
-            const subId = btn.getAttribute("data-subid");
-            const studentId = btn.getAttribute("data-studentid");
-            const remarkInput = document.getElementById(`remark-${subId}`);
-            const remarkText = remarkInput ? remarkInput.value.trim() : "";
-
-            if(!remarkText) {
-                alert("Please type a remark before saving.");
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "remarks"), {
-                    studentId: studentId, 
-                    teacherId: currentTeacherId, 
-                    remark: remarkText, 
-                    submissionId: subId, 
-                    timestamp: serverTimestamp()
-                });
-                
-                btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Sent`;
-                btn.classList.replace("bg-brand", "bg-slate-300");
-                btn.classList.replace("hover:bg-emerald-600", "hover:bg-slate-300");
-                btn.disabled = true;
-            } catch(err) {
-                console.error(err); alert("Failed to send remark.");
-            }
-        }
-
-        // --- QR SESSION HANDLING ---
+        // --- 6. QR SESSION OPEN/CLOSE ---
         if (e.target.closest("#btnOpenSessionModal") && !isViewOnly) {
-            const sm = document.getElementById("sessionModal");
-            if(sm) sm.classList.remove("hidden");
+            e.preventDefault();
+            const sm = document.getElementById("sessionModal"); 
+            if (sm) {
+                sm.classList.remove("hidden");
+            }
         }
+
         if (e.target.closest("#btnCloseSessionModal")) {
-            const sm = document.getElementById("sessionModal");
-            if(sm) sm.classList.add("hidden");
+            e.preventDefault();
+            const sm = document.getElementById("sessionModal"); 
+            if (sm) {
+                sm.classList.add("hidden");
+            }
         }
+
+        // --- START QR SESSION ---
         if (e.target.closest("#btnStartSession") && !isViewOnly) {
+            e.preventDefault();
             const selMyClass = document.getElementById("selMyClass");
             const selectedValue = selMyClass ? selMyClass.value : null;
-            if(!selectedValue) {
+            
+            if (!selectedValue) {
                 alert("Select a class first!");
                 return;
             }
 
             const [sectionId, subjectName] = selectedValue.split("|");
             const btnStartSession = document.getElementById("btnStartSession");
+            
             btnStartSession.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
             btnStartSession.disabled = true;
             
             try {
-                const now = new Date();
-                const expiresAt = new Date(now.getTime() + 5 * 60000); 
+                const now = new Date(); 
+                const expiresAt = new Date(now.getTime() + 5 * 60000);
                 const initialToken = Math.random().toString(36).substring(2, 10);
-
+                
                 const sessionRef = await addDoc(collection(db, "attendance_sessions"), {
                     teacherId: currentTeacherId, 
                     sectionId: sectionId, 
                     subject: subjectName, 
                     createdAt: now, 
                     expiresAt: expiresAt, 
-                    isActive: true,
+                    isActive: true, 
                     currentToken: initialToken
                 });
-
+                
                 activeSessionId = sessionRef.id;
                 
-                const sm = document.getElementById("sessionModal");
-                if(sm) sm.classList.add("hidden");
-                const qrDM = document.getElementById("qrDisplayModal");
-                if(qrDM) qrDM.classList.remove("hidden");
-                const qrCD = document.getElementById("qrClassDisplay");
-                if(qrCD) qrCD.innerText = `${subjectName} (Sec: ${sectionId})`;
+                const sm = document.getElementById("sessionModal"); 
+                if (sm) {
+                    sm.classList.add("hidden");
+                }
+                
+                const qrDM = document.getElementById("qrDisplayModal"); 
+                if (qrDM) {
+                    qrDM.classList.remove("hidden");
+                }
+                
+                const qrCD = document.getElementById("qrClassDisplay"); 
+                if (qrCD) {
+                    qrCD.innerText = `${subjectName} (Sec: ${sectionId})`;
+                }
                 
                 startSessionLogic(initialToken);
-            } catch (error) {
-                console.error("Session Start Error:", error); alert("Error starting session");
-            } finally {
-                btnStartSession.innerHTML = "Show QR Code"; btnStartSession.disabled = false;
-            }
-        }
-        if (e.target.closest("#btnCloseQr")) {
-            if (confirm("Are you sure you want to close this QR and end the session early?")) {
-                endSession();
+            } catch (error) { 
+                console.error("Session Error:", error);
+                alert("Error starting session"); 
+            } finally { 
+                btnStartSession.innerHTML = "Show QR Code"; 
+                btnStartSession.disabled = false; 
             }
         }
 
-        // --- POST ASSIGNMENT HANDLING ---
+        // --- CLOSE QR SESSION EARLY ---
+        if (e.target.closest("#btnCloseQr")) {
+            e.preventDefault();
+            if (confirm("Are you sure you want to close this QR and end the session early?")) { 
+                endSession(); 
+            }
+        }
+
+        // --- 7. POST ASSIGNMENTS (OPEN/CLOSE MODAL) ---
         if (e.target.closest("#btnOpenAssign") && !isViewOnly) {
-            const am = document.getElementById("assignModal");
-            if(am) am.classList.remove("hidden");
+            e.preventDefault();
+            const am = document.getElementById("assignModal"); 
+            if (am) {
+                am.classList.remove("hidden");
+            }
         }
+
         if (e.target.closest("#btnCloseAssign")) {
-            const am = document.getElementById("assignModal");
-            if(am) am.classList.add("hidden");
+            e.preventDefault();
+            const am = document.getElementById("assignModal"); 
+            if (am) {
+                am.classList.add("hidden");
+            }
         }
+
+        // --- SAVE NEW ASSIGNMENT ---
         if (e.target.closest("#btnSaveAssign") && !isViewOnly) {
+            e.preventDefault();
             const assignSelClass = document.getElementById("assignSelClass");
             const assignTitle = document.getElementById("assignTitle");
             const assignDue = document.getElementById("assignDue");
@@ -567,52 +622,81 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = assignTitle ? assignTitle.value.trim() : "";
             const dueDate = assignDue ? assignDue.value : "";
 
-            if(!selectedVal || !title || !dueDate) {
+            if (!selectedVal || !title || !dueDate) {
                 alert("Please fill all details!");
                 return;
             }
+            
             const [sectionId, subjectName] = selectedVal.split("|");
-
+            
             try {
                 await addDoc(collection(db, "assignments"), {
-                    teacherId: currentTeacherId, sectionId: sectionId, subjectName: subjectName, title: title, dueDate: dueDate, postedAt: new Date()
+                    teacherId: currentTeacherId, 
+                    sectionId: sectionId, 
+                    subjectName: subjectName, 
+                    title: title, 
+                    dueDate: dueDate, 
+                    postedAt: new Date()
                 });
-
+                
                 alert("Assignment Posted Successfully!");
-                const am = document.getElementById("assignModal");
-                if(am) am.classList.add("hidden");
-                if(assignTitle) assignTitle.value = "";
-                if(assignDue) assignDue.value = "";
+                const am = document.getElementById("assignModal"); 
+                if (am) {
+                    am.classList.add("hidden");
+                }
+                
+                if (assignTitle) {
+                    assignTitle.value = ""; 
+                }
+                if (assignDue) {
+                    assignDue.value = "";
+                }
+                
                 loadMyPostedAssignments();
-            } catch (err) {
-                console.error(err); alert("Failed to post assignment.");
+            } catch (err) { 
+                console.error("Assignment Error:", err);
+                alert("Failed to post assignment."); 
             }
         }
 
-        // --- VIEW SUBMISSIONS HANDLING ---
+        // --- 8. VIEW SUBMISSIONS MODAL ---
         if (e.target.closest("#btnCloseSubmissions")) {
-            const subModal = document.getElementById("submissionsModal");
-            if(subModal) subModal.classList.add("hidden");
+            e.preventDefault();
+            const subModal = document.getElementById("submissionsModal"); 
+            if (subModal) {
+                subModal.classList.add("hidden");
+            }
         }
+        
         if (e.target.closest('.btn-view-subs')) {
+            e.preventDefault();
             const btn = e.target.closest('.btn-view-subs');
             const assignmentId = btn.getAttribute("data-id");
             const sectionId = btn.getAttribute("data-sec").toUpperCase();
             
-            if(document.getElementById("subModalTitle")) document.getElementById("subModalTitle").innerText = btn.getAttribute("data-title");
+            const titleEl = document.getElementById("subModalTitle");
+            if (titleEl) {
+                titleEl.innerText = btn.getAttribute("data-title");
+            }
             
-            const subModal = document.getElementById("submissionsModal");
-            if(subModal) subModal.classList.remove("hidden");
+            const subModal = document.getElementById("submissionsModal"); 
+            if (subModal) {
+                subModal.classList.remove("hidden");
+            }
             
             const submissionsList = document.getElementById("submissionsList");
-            if(submissionsList) submissionsList.innerHTML = "<p class='text-sm text-slate-500'><i class='fa-solid fa-spinner fa-spin mr-2'></i> Fetching submissions...</p>";
+            if (submissionsList) {
+                submissionsList.innerHTML = "<p class='text-sm text-slate-500'><i class='fa-solid fa-spinner fa-spin mr-2'></i> Fetching submissions...</p>";
+            }
 
             try {
+                // Fetch all students in this section
                 const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", sectionId));
                 const stSnap = await getDocs(stQ);
                 let allClassStudents = [];
                 stSnap.forEach(d => allClassStudents.push({ id: d.id, ...d.data() }));
 
+                // Fetch submissions
                 const subQ = query(collection(db, "assignment_submissions"), where("assignmentId", "==", assignmentId));
                 const subSnap = await getDocs(subQ);
                 
@@ -625,43 +709,54 @@ document.addEventListener("DOMContentLoaded", () => {
                     submissionsData[dat.studentId] = { id: d.id, ...dat };
                 });
 
-                if(submissionsList) submissionsList.innerHTML = "";
+                if (submissionsList) {
+                    submissionsList.innerHTML = "";
+                }
 
                 let submittedHTML = `<h3 class="font-black text-emerald-600 mb-4 text-xs uppercase tracking-widest border-b border-emerald-100 pb-2">Submitted (${submittedStudentIds.size})</h3>`;
                 let pendingHTML = `<h3 class="font-black text-red-500 mb-4 mt-8 text-xs uppercase tracking-widest border-b border-red-100 pb-2">Pending (${allClassStudents.length - submittedStudentIds.size})</h3>`;
 
-                for(const student of allClassStudents) {
-                    if(submittedStudentIds.has(student.id)) {
+                for (const student of allClassStudents) {
+                    if (submittedStudentIds.has(student.id)) {
                         const subData = submissionsData[student.id];
+                        const currentStatus = subData.status || 'pending_review';
                         
-                        const remarkActionHTML = isViewOnly ? 
-                            `<p class="text-xs text-orange-500 font-bold mt-2"><i class="fa-solid fa-lock"></i> Remarks disabled in View Mode</p>` :
-                            `<div class="flex gap-2 mt-4">
-                                <input type="text" id="remark-${subData.id}" placeholder="Give a remark or grade..." class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-brand">
-                                <button class="btn-save-remark bg-brand text-white font-bold text-xs px-5 py-2 rounded-xl hover:bg-emerald-600 shadow-sm transition" data-subid="${subData.id}" data-studentid="${student.id}">
-                                    Send Remark
-                                </button>
-                            </div>`;
+                        let statusBadge = '';
+                        let actionHTML = '';
 
-                        const fileHTML = subData.fileUrl ? 
-                            `<div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-                                <span class="text-xs font-bold text-blue-700"><i class="fa-solid fa-paperclip mr-1"></i> File Attached</span>
-                                <a href="${subData.fileUrl}" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition font-bold shadow-sm flex items-center gap-1"><i class="fa-solid fa-up-right-from-square"></i> Open File</a>
-                            </div>` : '';
+                        if (currentStatus === 'approved') {
+                            statusBadge = `<span class="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded border border-emerald-200"><i class="fa-solid fa-check-double mr-1"></i> Approved</span>`;
+                            actionHTML = `<p class="text-xs text-emerald-600 font-bold mt-2 bg-emerald-50 p-2 rounded-lg"><i class="fa-solid fa-circle-check mr-1"></i> Task Approved.</p>`;
+                        } else if (currentStatus === 'rejected') {
+                            statusBadge = `<span class="text-[10px] bg-red-50 text-red-600 font-bold px-2 py-1 rounded border border-red-200"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;
+                            actionHTML = `<p class="text-xs text-red-600 font-bold mt-2 bg-red-50 p-2 rounded-lg"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Reason: ${subData.teacherRemark || 'No reason provided'}</p>`;
+                        } else {
+                            statusBadge = `<span class="text-[10px] bg-yellow-50 text-yellow-600 font-bold px-2 py-1 rounded border border-yellow-200"><i class="fa-solid fa-clock mr-1"></i> Pending Review</span>`;
+                            
+                            actionHTML = isViewOnly ? `<p class="text-xs text-orange-500 font-bold mt-2"><i class="fa-solid fa-lock"></i> Actions disabled in View Mode</p>` : `
+                            <div class="flex flex-col gap-2 mt-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <input type="text" id="review-remark-${subData.id}" placeholder="Type reason (required if rejecting)..." class="flex-1 text-sm bg-white border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-brand">
+                                <div class="flex gap-2">
+                                    <button class="btn-approve-sub flex-1 bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-emerald-600 transition shadow-sm" data-subid="${subData.id}">Approve Task</button>
+                                    <button class="btn-reject-sub flex-1 bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-red-600 transition shadow-sm" data-subid="${subData.id}">Reject Task</button>
+                                </div>
+                            </div>`;
+                        }
+
+                        const fileHTML = subData.fileUrl ? `<div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between"><span class="text-xs font-bold text-blue-700"><i class="fa-solid fa-paperclip mr-1"></i> File Attached</span><a href="${subData.fileUrl}" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition font-bold shadow-sm flex items-center gap-1"><i class="fa-solid fa-up-right-from-square"></i> Open File</a></div>` : '';
 
                         submittedHTML += `
-                            <div class="p-5 border border-slate-100 rounded-2xl bg-white shadow-sm mb-3">
+                            <div class="p-5 border border-slate-100 rounded-2xl bg-white shadow-sm mb-3 transition hover:shadow-md">
                                 <div class="flex justify-between items-center mb-3 border-b border-slate-50 pb-2">
-                                    <p class="font-bold text-sm text-slate-800"><i class="fa-solid fa-user-graduate text-emerald-500 mr-2"></i>${student.name}</p>
-                                    <span class="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded">Submitted</span>
+                                    <p class="font-bold text-sm text-slate-800"><i class="fa-solid fa-user-graduate text-brand mr-2"></i>${student.name}</p>
+                                    ${statusBadge}
                                 </div>
                                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-600 break-words shadow-inner">
                                     ${subData.answer || "<i class='text-slate-400'>No text response provided.</i>"}
                                 </div>
-                                ${fileHTML}
-                                ${remarkActionHTML}
-                            </div>
-                        `;
+                                ${fileHTML} 
+                                ${actionHTML}
+                            </div>`;
                     } else {
                         pendingHTML += `
                             <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 shadow-sm mb-3 flex justify-between items-center opacity-75 hover:opacity-100 transition">
@@ -670,136 +765,243 @@ document.addEventListener("DOMContentLoaded", () => {
                                     <p class="text-[10px] text-slate-500 uppercase font-bold mt-1">Pending Task Submission</p>
                                 </div>
                                 <span class="text-xs font-black text-red-500 bg-red-50 px-3 py-1 rounded-lg border border-red-100">Not Submitted</span>
-                            </div>
-                        `;
+                            </div>`;
                     }
                 }
 
-                if(submissionsList) {
+                if (submissionsList) {
                     submissionsList.innerHTML = submittedHTML + pendingHTML;
                 }
 
-            } catch(err) {
+            } catch(err) { 
                 console.error("Error fetching submissions:", err);
-                if(submissionsList) submissionsList.innerHTML = "<p class='text-red-500 text-sm'>Error fetching submissions.</p>";
+                if (submissionsList) {
+                    submissionsList.innerHTML = "<p class='text-red-500 text-sm'>Error fetching submissions.</p>"; 
+                }
             }
         }
 
-        // --- LOGOUT ---
+        // --- APPROVE ASSIGNMENT BUTTON ---
+        if (e.target.closest('.btn-approve-sub')) {
+            e.preventDefault();
+            if (isViewOnly) {
+                return;
+            }
+            
+            const btn = e.target.closest('.btn-approve-sub');
+            const subId = btn.getAttribute("data-subid");
+            const remarkInput = document.getElementById(`review-remark-${subId}`);
+            const remark = remarkInput ? remarkInput.value.trim() : "";
+
+            btn.innerHTML = "Approving..."; 
+            btn.disabled = true;
+            
+            try {
+                await updateDoc(doc(db, "assignment_submissions", subId), {
+                    status: "approved",
+                    teacherRemark: remark || "Good job!",
+                    reviewedAt: serverTimestamp()
+                });
+                
+                const parentDiv = btn.closest('.p-5');
+                if (parentDiv) {
+                    parentDiv.outerHTML = `<div class="p-5 border border-emerald-100 rounded-2xl bg-emerald-50 shadow-sm mb-3 text-center"><p class="text-sm font-bold text-emerald-600"><i class="fa-solid fa-circle-check mr-2"></i> Successfully Approved!</p></div>`;
+                }
+            } catch (error) {
+                console.error("Approval Error:", error);
+                alert("Failed to approve");
+                btn.innerHTML = "Approve Task"; 
+                btn.disabled = false;
+            }
+        }
+
+        // --- REJECT ASSIGNMENT BUTTON ---
+        if (e.target.closest('.btn-reject-sub')) {
+            e.preventDefault();
+            if (isViewOnly) {
+                return;
+            }
+            
+            const btn = e.target.closest('.btn-reject-sub');
+            const subId = btn.getAttribute("data-subid");
+            const remarkInput = document.getElementById(`review-remark-${subId}`);
+            const remark = remarkInput ? remarkInput.value.trim() : "";
+
+            if (!remark) {
+                alert("Please type a reason for rejection so the student knows what to fix.");
+                return;
+            }
+
+            btn.innerHTML = "Rejecting..."; 
+            btn.disabled = true;
+            
+            try {
+                await updateDoc(doc(db, "assignment_submissions", subId), {
+                    status: "rejected",
+                    teacherRemark: remark,
+                    reviewedAt: serverTimestamp()
+                });
+                
+                const parentDiv = btn.closest('.p-5');
+                if (parentDiv) {
+                    parentDiv.outerHTML = `<div class="p-5 border border-red-100 rounded-2xl bg-red-50 shadow-sm mb-3 text-center"><p class="text-sm font-bold text-red-600"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Successfully Rejected!</p></div>`;
+                }
+            } catch (error) {
+                console.error("Rejection Error:", error);
+                alert("Failed to reject");
+                btn.innerHTML = "Reject Task"; 
+                btn.disabled = false;
+            }
+        }
+
+        // --- 9. LOGOUT ---
         if (e.target.closest("#btnLogout")) {
-            if(isViewOnly) window.close(); 
-            else signOut(auth).then(() => window.location.replace("/login"));
+            e.preventDefault();
+            if (isViewOnly) {
+                window.close(); 
+            } else {
+                signOut(auth).then(() => window.location.replace("/login"));
+            }
         }
     });
 
-    // Event Delegation for "Change" events (Dropdowns)
+    // ================= EVENT DELEGATION FOR DROPDOWN CHANGES =================
     document.addEventListener("change", async (e) => {
         if (e.target.id === "remarkSelClass") {
-            const sec = e.target.value;
-            if(!sec) return;
+            const sec = e.target.value; 
+            
+            if (!sec) {
+                return;
+            }
             
             const rSelStudent = document.getElementById("remarkSelStudent");
-            if(rSelStudent) rSelStudent.innerHTML = '<option value="">Fetching...</option>';
+            if (rSelStudent) {
+                rSelStudent.innerHTML = '<option value="">Fetching...</option>';
+            }
             
             try {
                 const sq = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", sec));
                 const sSnap = await getDocs(sq);
                 
-                if(rSelStudent) {
+                if (rSelStudent) {
                     rSelStudent.innerHTML = '<option value="">-- Choose Student --</option>';
-                    sSnap.forEach(d => rSelStudent.innerHTML += `<option value="${d.id}">${d.data().name}</option>`);
+                    sSnap.forEach(d => {
+                        rSelStudent.innerHTML += `<option value="${d.id}">${d.data().name}</option>`;
+                    });
                 }
             } catch(error) {
-                console.error("Error fetching students:", error);
+                console.error("Dropdown Fetch Error:", error);
             }
         }
     });
 
-    // Helper functions for QR Session
-    let countdownInterval = null;
-    let qrRefreshInterval = null;
+    // ================= HELPER FUNCTIONS FOR QR SESSION =================
+    let countdownInterval = null; 
+    let qrRefreshInterval = null; 
     let activeSessionId = null;
     let qrcodeObj = null;
 
     function startSessionLogic(initialToken) {
         let timeLeft = 300; 
         const qrTimerDisplay = document.getElementById("qrTimerDisplay");
-        if(qrTimerDisplay) qrTimerDisplay.innerText = "05:00";
+        
+        if (qrTimerDisplay) {
+            qrTimerDisplay.innerText = "05:00";
+        }
+        
         drawQRCode(activeSessionId, initialToken);
 
         countdownInterval = setInterval(async () => {
-            timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
+            timeLeft--; 
+            const minutes = Math.floor(timeLeft / 60); 
             const seconds = timeLeft % 60;
-            if(qrTimerDisplay) qrTimerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
+            
+            if (qrTimerDisplay) {
+                qrTimerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
             if (timeLeft <= 0) {
                 endSession(); 
             }
         }, 1000);
 
         qrRefreshInterval = setInterval(async () => {
-            if(!activeSessionId) return;
+            if (!activeSessionId) {
+                return;
+            }
             const newToken = Math.random().toString(36).substring(2, 10);
-            try {
-                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { currentToken: newToken });
-                drawQRCode(activeSessionId, newToken);
-            } catch(e) {}
+            try { 
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { currentToken: newToken }); 
+                drawQRCode(activeSessionId, newToken); 
+            } catch(e) {
+                console.error("QR Refresh Error:", e);
+            }
         }, 5000);
     }
 
     function drawQRCode(sessionId, token) {
         const qrCodeContainer = document.getElementById("qrCodeContainer");
-        if(!qrCodeContainer) return;
+        if (!qrCodeContainer) {
+            return;
+        }
+        
         qrCodeContainer.innerHTML = ""; 
         const scanUrl = `https://acet-nexus.onrender.com/scan?session=${sessionId}&token=${token}`;
         
-        qrcodeObj = new QRCode(qrCodeContainer, {
-            text: scanUrl,
-            width: 250,
-            height: 250,
-            colorDark : "#0f172a",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
+        qrcodeObj = new QRCode(qrCodeContainer, { 
+            text: scanUrl, 
+            width: 250, 
+            height: 250, 
+            colorDark : "#0f172a", 
+            colorLight : "#ffffff", 
+            correctLevel : QRCode.CorrectLevel.H 
         });
     }
 
     async function endSession() {
-        clearInterval(countdownInterval);
+        clearInterval(countdownInterval); 
         clearInterval(qrRefreshInterval);
-        const qrDisplayModal = document.getElementById("qrDisplayModal");
-        if(qrDisplayModal) qrDisplayModal.classList.add("hidden");
         
-        if (activeSessionId) {
-            alert("Attendance Session Closed");
-            try {
-                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { isActive: false });
-            } catch(e) {}
+        const qrDisplayModal = document.getElementById("qrDisplayModal");
+        if (qrDisplayModal) {
+            qrDisplayModal.classList.add("hidden");
+        }
+        
+        if (activeSessionId) { 
+            alert("Attendance Session Closed"); 
+            try { 
+                await updateDoc(doc(db, "attendance_sessions", activeSessionId), { isActive: false }); 
+            } catch(e) {
+                console.error("End Session Error:", e);
+            } 
         }
         activeSessionId = null;
     }
 
-    // Helper functions for Assignments
+    // ================= HELPER FUNCTION FOR ASSIGNMENTS =================
     async function loadMyPostedAssignments() {
         try {
             const q = query(collection(db, "assignments"), where("teacherId", "==", currentTeacherId));
             const snapshot = await getDocs(q);
             
-            if(document.getElementById("statAssignments")) {
+            if (document.getElementById("statAssignments")) {
                 document.getElementById("statAssignments").innerText = snapshot.size;
             }
-
+            
             const container = document.getElementById("postedAssignmentsContainer");
-            if(!container) return;
-            container.innerHTML = "";
-
-            if(snapshot.empty) {
-                container.innerHTML = "<p class='text-slate-500 text-sm'>No assignments posted yet.</p>";
+            if (!container) {
                 return;
+            }
+            
+            container.innerHTML = "";
+            
+            if (snapshot.empty) { 
+                container.innerHTML = "<p class='text-slate-500 text-sm'>No assignments posted yet.</p>"; 
+                return; 
             }
 
             snapshot.forEach(doc => {
-                const data = doc.data();
+                const data = doc.data(); 
                 const formattedDate = new Date(data.dueDate).toLocaleDateString();
                 
                 container.innerHTML += `
@@ -808,12 +1010,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             <p class="font-bold text-slate-800">${data.title}</p>
                             <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase">Sec: <span class="text-brand">${data.sectionId}</span> | Due: <span class="text-red-500">${formattedDate}</span></p>
                         </div>
-                        <button class="btn-view-subs bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl transition" data-id="${doc.id}" data-title="${data.title}" data-sec="${data.sectionId}">
-                            View Submissions
-                        </button>
-                    </div>
-                `;
+                        <button class="btn-view-subs bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl transition" data-id="${doc.id}" data-title="${data.title}" data-sec="${data.sectionId}">View Submissions</button>
+                    </div>`;
             });
-        } catch(e) { console.error("Error loading assignments:", e); }
+        } catch(e) {
+            console.error("Load Assignments Error:", e);
+        }
     }
 });

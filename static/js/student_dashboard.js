@@ -27,12 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const activeTabId = activeTab ? activeTab.id : defaultTabId;
             const targetId = btn.getAttribute("data-target");
 
-            if (activeTabId === targetId) return;
+            if (activeTabId === targetId) {
+                return;
+            }
 
             navBtns.forEach(b => {
                 b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(67,97,238,0.4)]");
                 b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             });
+
             views.forEach(v => {
                 v.classList.remove("active");
                 v.style.display = "none";
@@ -42,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
             
             const targetView = document.getElementById(targetId);
-            if(targetView) {
+            if (targetView) {
                 targetView.classList.add("active");
                 targetView.style.display = "block";
             }
@@ -93,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function setupImpersonationUI() {
         const header = document.querySelector("header");
-        if(header) {
+        if (header) {
             header.insertAdjacentHTML('afterend', `
                 <div class="bg-yellow-100 border-b border-yellow-200 text-yellow-800 text-center py-2 text-xs font-bold tracking-widest z-50 shadow-sm">
                     <i class="fa-solid fa-eye mr-2"></i> VIEW ONLY MODE (ADMIN/TEACHER)
@@ -105,42 +108,69 @@ document.addEventListener("DOMContentLoaded", () => {
     async function safeLoadStudentData(targetUid) {
         try {
             const userDoc = await getDoc(doc(db, "users", targetUid));
-            if(userDoc.exists()) {
+            
+            if (userDoc.exists()) {
                 const data = userDoc.data();
                 const fullName = data.name || "Student";
                 
-                if(document.getElementById("welcomeText")) {
+                if (document.getElementById("welcomeText")) {
                     document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
                 }
                 
                 currentStudentSection = data.section ? data.section.trim().toUpperCase() : "Unassigned";
                 
-                if(document.getElementById("studentSectionBadge")) {
+                if (document.getElementById("studentSectionBadge")) {
                     document.getElementById("studentSectionBadge").innerText = `SEC: ${currentStudentSection}`;
                 }
                 
-                if(document.getElementById("currentDateDisplay")) {
+                if (document.getElementById("currentDateDisplay")) {
                     document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
                 }
 
                 const nameParts = fullName.trim().split(/\s+/);
                 let initials = "U";
+                
                 if (nameParts.length === 1) {
                     initials = nameParts[0][0].toUpperCase();
                 } else if (nameParts.length >= 2) {
                     initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
                 }
-                if(document.getElementById("userAvatarInitials")) {
+                
+                if (document.getElementById("userAvatarInitials")) {
                     document.getElementById("userAvatarInitials").innerText = initials;
                 }
                 
                 setupEditableTarget();
 
-                try { listenForLiveSession(); } catch(e) { console.error("Live Session Error:", e); }
-                try { await loadMyHistoryAndGraph(); } catch(e) { console.error("History/Graph Error:", e); }
-                try { await loadMyAssignments(); } catch(e) { console.error("Assignments Error:", e); }
-                try { await loadMyRemarks(); } catch(e) { console.error("Remarks Error:", e); }
-                try { await loadMySubjects(); } catch(e) { console.error("Subjects Error:", e); }
+                try { 
+                    listenForLiveSession(); 
+                } catch(e) { 
+                    console.error("Live Session Error:", e); 
+                }
+
+                try { 
+                    await loadMyHistoryAndGraph(); 
+                } catch(e) { 
+                    console.error("History/Graph Error:", e); 
+                }
+
+                try { 
+                    await loadMyAssignments(); 
+                } catch(e) { 
+                    console.error("Assignments Error:", e); 
+                }
+
+                try { 
+                    await loadMyRemarks(); 
+                } catch(e) { 
+                    console.error("Remarks Error:", e); 
+                }
+
+                try { 
+                    await loadMySubjects(); 
+                } catch(e) { 
+                    console.error("Subjects Error:", e); 
+                }
             }
         } catch (error) {
             console.error("Critical User Load Error:", error);
@@ -150,7 +180,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================= 2. LOAD SUBJECTS =================
     async function loadMySubjects() {
         const container = document.getElementById("mySubjectsContainer");
-        if(!container) return;
+        if (!container) {
+            return;
+        }
 
         if (currentStudentSection === "Unassigned") {
             container.innerHTML = "<p class='text-slate-500 text-sm'>You are not assigned to a section yet. Update your profile.</p>";
@@ -159,9 +191,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const q = query(collection(db, "teacher_assignments"), where("sectionId", "==", currentStudentSection));
         const snapshot = await getDocs(q);
+        
         container.innerHTML = "";
 
-        if(snapshot.empty) {
+        if (snapshot.empty) {
             container.innerHTML = "<p class='text-slate-500 text-sm'>No subjects allocated to your section yet.</p>";
             return;
         }
@@ -185,24 +218,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 3. LIVE SESSION =================
+    // ================= 3. LIVE SESSION LISTENER =================
     function listenForLiveSession() {
-        if(currentStudentSection === "Unassigned") return;
+        if (currentStudentSection === "Unassigned") {
+            return;
+        }
+        
         const sessionQuery = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection), where("isActive", "==", true));
 
         onSnapshot(sessionQuery, (snapshot) => {
             const banner = document.getElementById("liveSessionBanner");
-            if(!banner) return;
+            if (!banner) {
+                return;
+            }
 
             if (!snapshot.empty) {
                 const sessionData = snapshot.docs[0].data();
                 activeSessionId = snapshot.docs[0].id;
                 
-                const liveSubjectName = document.getElementById("liveSubjectName");
-                if(liveSubjectName) liveSubjectName.innerText = sessionData.subject;
+                const liveSubText = document.getElementById("liveSubjectName");
+                if (liveSubText) {
+                    liveSubText.innerText = sessionData.subject;
+                }
                 
-                const btnMarkPresent = document.getElementById("btnMarkPresent");
-                if(isViewOnly && btnMarkPresent) btnMarkPresent.classList.add("hidden");
+                const markBtn = document.getElementById("btnMarkPresent");
+                if (isViewOnly && markBtn) {
+                    markBtn.classList.add("hidden");
+                }
                 
                 banner.classList.remove("hidden");
                 setTimeout(() => {
@@ -213,14 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 activeSessionId = null;
                 banner.classList.remove("scale-100", "opacity-100");
                 banner.classList.add("scale-95", "opacity-0");
-                setTimeout(() => { banner.classList.add("hidden"); }, 500);
+                setTimeout(() => { 
+                    banner.classList.add("hidden"); 
+                }, 500);
             }
         });
     }
 
     // ================= 4. HISTORY, GRAPHS & LOGS (JS SORTED) =================
     async function loadMyHistoryAndGraph() {
-        if(currentStudentSection === "Unassigned") return;
+        if (currentStudentSection === "Unassigned") {
+            return;
+        }
 
         // Fetch All sessions WITHOUT orderBy to avoid Firebase Composite Index error
         const sessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection));
@@ -229,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let allSessions = [];
         sessSnap.forEach(doc => {
             const data = doc.data();
-            if(data.createdAt) {
+            if (data.createdAt) {
                 allSessions.push({ id: doc.id, ...data, time: data.createdAt.toDate().getTime() });
             }
         });
@@ -244,10 +290,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const attendedSet = new Set();
         let allMarks = [];
+        
         marksSnap.forEach(doc => {
             const data = doc.data();
             attendedSet.add(data.sessionId);
-            if(data.timestamp) {
+            if (data.timestamp) {
                 allMarks.push({ id: doc.id, ...data, time: data.timestamp.toDate().getTime() });
             }
         });
@@ -256,13 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
         let percentage = totalHeld > 0 ? Math.round((classesAttended / totalHeld) * 100) : 0;
         let missedClasses = totalHeld > classesAttended ? totalHeld - classesAttended : 0;
 
-        if(document.getElementById("statTotalSessions")) {
+        if (document.getElementById("statTotalSessions")) {
             document.getElementById("statTotalSessions").innerText = classesAttended; // Lectures Attended
         }
-        if(document.getElementById("statAttPercent")) {
+        if (document.getElementById("statAttPercent")) {
             document.getElementById("statAttPercent").innerText = `${percentage}%`;
         }
-        if(document.getElementById("graphPercentage")) {
+        if (document.getElementById("graphPercentage")) {
             document.getElementById("graphPercentage").innerText = `${percentage}%`;
         }
         
@@ -279,19 +326,24 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             allSessions.forEach(sessData => {
                 runTotal++;
+                
                 if (attendedSet.has(sessData.id)) {
                     runAttended++;
                 }
+                
                 let pct = Math.round((runAttended / runTotal) * 100);
                 let d = new Date(sessData.time);
+                
                 labels.push(`${d.getDate()}/${d.getMonth()+1}`);
                 trendData.push(pct);
             });
 
+            // Limit chart to last 10 data points
             if (labels.length > 10) {
                 labels = labels.slice(-10);
                 trendData = trendData.slice(-10);
             }
+            
             drawLineChart(labels, trendData);
         }
 
@@ -300,13 +352,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const container2 = document.getElementById("myHistoryContainer");
         
         const renderLogs = (container) => {
-            if(!container) return;
+            if (!container) {
+                return;
+            }
+            
             container.innerHTML = "";
-            if(allMarks.length === 0) {
+            
+            if (allMarks.length === 0) {
                 container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
             } else {
                 allMarks.sort((a,b) => b.time - a.time); // Newest first
                 const topMarks = allMarks.slice(0, 10);
+                
                 topMarks.forEach(data => {
                     const dateStr = new Date(data.time).toLocaleString();
                     container.innerHTML += `
@@ -331,24 +388,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function drawChart(attended, missed) {
         const ctx = document.getElementById('attendanceChart');
-        if(!ctx) return;
+        if (!ctx) {
+            return;
+        }
 
-        if(attendanceChartInstance) attendanceChartInstance.destroy(); 
+        if (attendanceChartInstance) {
+            attendanceChartInstance.destroy(); 
+        }
+        
         const dataVals = (attended === 0 && missed === 0) ? [1] : [attended, missed];
         const bgColors = (attended === 0 && missed === 0) ? ['#e2e8f0'] : ['#4361ee', '#e2e8f0'];
 
         attendanceChartInstance = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
-            data: { labels: ['Present', 'Absent'], datasets: [{ data: dataVals, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: (attended !== 0 || missed !== 0) } } }
+            data: { 
+                labels: ['Present', 'Absent'], 
+                datasets: [{ 
+                    data: dataVals, 
+                    backgroundColor: bgColors, 
+                    borderWidth: 0, 
+                    hoverOffset: 4 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%', 
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { enabled: (attended !== 0 || missed !== 0) } 
+                } 
+            }
         });
     }
 
     function drawLineChart(labels, data) {
         const ctx = document.getElementById('attendanceLineChart');
-        if(!ctx) return;
+        if (!ctx) {
+            return;
+        }
 
-        if(attendanceLineChartInstance) attendanceLineChartInstance.destroy();
+        if (attendanceLineChartInstance) {
+            attendanceLineChartInstance.destroy();
+        }
         
         attendanceLineChartInstance = new Chart(ctx.getContext('2d'), {
             type: 'line',
@@ -359,16 +441,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     data: data,
                     borderColor: '#4361ee',
                     backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                    fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#4361ee', pointRadius: 4
+                    fill: true, 
+                    tension: 0.4, 
+                    borderWidth: 3, 
+                    pointBackgroundColor: '#fff', 
+                    pointBorderColor: '#4361ee', 
+                    pointRadius: 4
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { y: { beginAtZero: true, max: 100 } } 
+            }
         });
     }
 
     function setupEditableTarget() {
         const targetText = document.getElementById("targetText"); 
-        if(!targetText) return;
+        if (!targetText) {
+            return;
+        }
+        
         const savedTarget = localStorage.getItem(`target_${currentStudentId}`) || 75;
         targetText.innerText = savedTarget + "%";
 
@@ -377,30 +472,35 @@ document.addEventListener("DOMContentLoaded", () => {
         
         targetText.parentElement.addEventListener("click", () => {
             let newTarget = prompt("Set your target attendance percentage (0-100):", savedTarget);
-            if(newTarget !== null && !isNaN(newTarget) && newTarget >= 0 && newTarget <= 100) {
+            if (newTarget !== null && !isNaN(newTarget) && newTarget >= 0 && newTarget <= 100) {
                 localStorage.setItem(`target_${currentStudentId}`, newTarget);
                 targetText.innerText = newTarget + "%";
             }
         });
     }
 
-    // ================= 5. LOAD ASSIGNMENTS =================
+    // ================= 5. LOAD ASSIGNMENTS (WITH NEW APPROVAL LOGIC) =================
     async function loadMyAssignments() {
         const container = document.getElementById("myAssignmentsContainer");
-        if(!container) return;
+        if (!container) {
+            return;
+        }
 
-        if(currentStudentSection === "Unassigned") {
+        if (currentStudentSection === "Unassigned") {
             container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
             return;
         }
 
-        const snapshot = await getDocs(query(collection(db, "assignments"), where("sectionId", "==", currentStudentSection)));
-        container.innerHTML = "";
+        const q = query(collection(db, "assignments"), where("sectionId", "==", currentStudentSection));
+        const snapshot = await getDocs(q);
         
+        container.innerHTML = "";
         let activeAssignmentsCount = 0;
 
-        if(snapshot.empty) {
-            if(document.getElementById("statAssignments")) document.getElementById("statAssignments").innerText = "0";
+        if (snapshot.empty) {
+            if (document.getElementById("statAssignments")) {
+                document.getElementById("statAssignments").innerText = "0";
+            }
             container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
             return;
         }
@@ -409,16 +509,36 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = docSnap.data();
             const formattedDate = new Date(data.dueDate).toLocaleDateString();
 
-            const subSnap = await getDocs(query(collection(db, "assignment_submissions"), where("assignmentId", "==", docSnap.id), where("studentId", "==", currentStudentId)));
-            const isSubmitted = !subSnap.empty;
-            if(!isSubmitted) activeAssignmentsCount++;
-
-            let buttonHTML = `<button disabled class="bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed"><i class="fa-solid fa-check-double mr-1"></i> Submitted</button>`;
+            const subQ = query(collection(db, "assignment_submissions"), where("assignmentId", "==", docSnap.id), where("studentId", "==", currentStudentId));
+            const subSnap = await getDocs(subQ);
             
-            if(!isSubmitted) {
-                buttonHTML = isViewOnly ? 
-                `<span class="text-xs font-bold text-slate-400">Not Submitted</span>` : 
-                `<button class="btn-submit-task bg-brand text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition" data-id="${docSnap.id}" data-title="${data.title}">Submit Task</button>`;
+            const isSubmitted = !subSnap.empty;
+            
+            let buttonHTML = "";
+            let statusFeedback = "";
+
+            if (!isSubmitted) {
+                activeAssignmentsCount++;
+                
+                if (isViewOnly) {
+                    buttonHTML = `<span class="text-xs font-bold text-slate-400">Not Submitted</span>`;
+                } else {
+                    buttonHTML = `<button class="btn-submit-task bg-brand text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition" data-id="${docSnap.id}" data-title="${data.title}">Submit Task</button>`;
+                }
+            } else {
+                // If submitted, check the status from teacher
+                const subData = subSnap.docs[0].data();
+                const currentStatus = subData.status || 'pending_review';
+                
+                if (currentStatus === 'approved') {
+                    buttonHTML = `<button disabled class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-emerald-200"><i class="fa-solid fa-check-double mr-1"></i> Approved</button>`;
+                    statusFeedback = `<p class="text-[11px] text-emerald-600 font-bold mt-3 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100"><i class="fa-solid fa-circle-check mr-1"></i> Teacher: ${subData.teacherRemark || 'Great work!'}</p>`;
+                } else if (currentStatus === 'rejected') {
+                    buttonHTML = `<button disabled class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-red-200"><i class="fa-solid fa-xmark mr-1"></i> Rejected</button>`;
+                    statusFeedback = `<p class="text-[11px] text-red-600 font-bold mt-3 bg-red-50 px-3 py-2 rounded-lg border border-red-100"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Reason: ${subData.teacherRemark || 'Please review and resubmit'}</p>`;
+                } else {
+                    buttonHTML = `<button disabled class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-yellow-200"><i class="fa-solid fa-clock mr-1"></i> Under Review</button>`;
+                }
             }
 
             container.innerHTML += `
@@ -430,6 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                         <p class="font-bold text-base ${isSubmitted ? 'text-slate-500 line-through' : 'text-slate-800'}">${data.title}</p>
                         <p class="text-xs text-slate-500 font-bold uppercase mt-1">Subject: <span class="text-brand">${data.subjectName}</span></p>
+                        ${statusFeedback}
                     </div>
                     <div class="flex justify-end mt-4 pt-4 border-t border-slate-100">
                         ${buttonHTML}
@@ -437,7 +558,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        if(document.getElementById("statAssignments")) {
+        
+        if (document.getElementById("statAssignments")) {
             document.getElementById("statAssignments").innerText = activeAssignmentsCount;
         }
     }
@@ -445,12 +567,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================= 6. FETCH REMARKS =================
     async function loadMyRemarks() {
         const container = document.getElementById("myRemarksContainer");
-        if(!container) return;
+        if (!container) {
+            return;
+        }
 
         const snapshot = await getDocs(query(collection(db, "remarks"), where("studentId", "==", currentStudentId)));
         container.innerHTML = "";
 
-        if(snapshot.empty) {
+        if (snapshot.empty) {
             container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No feedback received yet.</p>";
             return;
         }
@@ -472,18 +596,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================= 7. GLOBAL EVENT DELEGATION (ALL CLICKS) =================
     document.addEventListener("click", async (e) => {
         
-        // Mark Present
+        // --- MARK PRESENT ---
         if (!isViewOnly && e.target.closest('#btnMarkPresent')) {
+            e.preventDefault();
             const btnMarkPresent = e.target.closest('#btnMarkPresent');
-            if(!activeSessionId) return;
+            
+            if (!activeSessionId) {
+                return;
+            }
+            
             btnMarkPresent.disabled = true;
             btnMarkPresent.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Marking...`;
 
             try {
                 const checkQ = query(collection(db, "attendance_marks"), where("sessionId", "==", activeSessionId), where("studentId", "==", currentStudentId));
                 const checkSnap = await getDocs(checkQ);
-                if(!checkSnap.empty) {
-                    alert("You have already marked your attendance!");
+                
+                if (!checkSnap.empty) {
+                    alert("You have already marked your attendance for this session!");
                     btnMarkPresent.innerHTML = `Done`;
                     return;
                 }
@@ -499,49 +629,69 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnMarkPresent.classList.replace("bg-white", "bg-green-500");
                 btnMarkPresent.classList.replace("text-brand", "text-white");
                 btnMarkPresent.innerHTML = `Marked Present`;
+                
                 loadMyHistoryAndGraph(); 
             } catch (error) {
-                console.error(error); 
+                console.error("Attendance Error:", error); 
                 alert("Error marking attendance.");
                 btnMarkPresent.disabled = false;
                 btnMarkPresent.innerHTML = `Mark Present Now`;
             }
         }
 
-        // Open Submit Task Modal
+        // --- OPEN SUBMIT TASK MODAL ---
         if (!isViewOnly && e.target.closest('.btn-submit-task')) {
+            e.preventDefault();
             const btn = e.target.closest('.btn-submit-task');
             currentAssignmentIdToSubmit = btn.getAttribute("data-id");
+            
             const submitTaskTitle = document.getElementById("submitTaskTitle");
-            if(submitTaskTitle) submitTaskTitle.innerText = btn.getAttribute("data-title");
+            if (submitTaskTitle) {
+                submitTaskTitle.innerText = btn.getAttribute("data-title");
+            }
+            
             const submitModal = document.getElementById("submitModal");
-            if(submitModal) submitModal.classList.remove("hidden");
+            if (submitModal) {
+                submitModal.classList.remove("hidden");
+            }
         }
 
-        // Close Submit Task Modal
+        // --- CLOSE SUBMIT TASK MODAL ---
         if (e.target.closest('#btnCloseSubmit')) {
+            e.preventDefault();
             const submitModal = document.getElementById("submitModal");
-            if(submitModal) submitModal.classList.add("hidden");
+            if (submitModal) {
+                submitModal.classList.add("hidden");
+            }
+            
             const submitAnswer = document.getElementById("submitAnswer");
-            if(submitAnswer) submitAnswer.value = "";
+            if (submitAnswer) {
+                submitAnswer.value = "";
+            }
+            
             const submitFile = document.getElementById("submitFile");
-            if(submitFile) submitFile.value = "";
+            if (submitFile) {
+                submitFile.value = "";
+            }
         }
 
-        // 🔥 FIREBASE STORAGE UPLOAD LOGIC 🔥
+        // --- CONFIRM SUBMIT (FILE UPLOAD TO STORAGE & FIRESTORE) ---
         if (!isViewOnly && e.target.closest('#btnConfirmSubmit')) {
+            e.preventDefault();
+            
             const answerTextEl = document.getElementById("submitAnswer");
             const answerText = answerTextEl ? answerTextEl.value.trim() : "";
+            
             const fileInput = document.getElementById("submitFile");
             const file = fileInput ? fileInput.files[0] : null;
 
-            if(!answerText && !file) {
+            if (!answerText && !file) {
                 alert("Please provide an answer or attach a file!");
                 return;
             }
 
             const btn = document.getElementById("btnConfirmSubmit");
-            if(btn) {
+            if (btn) {
                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Uploading...`; 
                 btn.disabled = true;
             }
@@ -567,25 +717,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const submitModal = document.getElementById("submitModal");
-                if(submitModal) submitModal.classList.add("hidden");
-                if(answerTextEl) answerTextEl.value = "";
-                if(fileInput) fileInput.value = "";
+                if (submitModal) {
+                    submitModal.classList.add("hidden");
+                }
+                
+                if (answerTextEl) {
+                    answerTextEl.value = "";
+                }
+                
+                if (fileInput) {
+                    fileInput.value = "";
+                }
+                
+                alert("Assignment submitted successfully!");
                 loadMyAssignments(); 
-            } catch(error) { 
+            } catch (error) { 
                 console.error("Upload error:", error);
-                alert("Failed to submit task."); 
+                alert("Failed to submit task. Please try again."); 
             } finally { 
-                if(btn) {
+                if (btn) {
                     btn.innerHTML = "Submit Task"; 
                     btn.disabled = false; 
                 }
             }
         }
 
-        // Logout
+        // --- LOGOUT ---
         if (e.target.closest('#btnLogout')) {
-            if(isViewOnly) window.close(); 
-            else signOut(auth).then(() => window.location.replace("/login"));
+            e.preventDefault();
+            if (isViewOnly) {
+                window.close(); 
+            } else {
+                signOut(auth).then(() => window.location.replace("/login"));
+            }
         }
     });
 });
