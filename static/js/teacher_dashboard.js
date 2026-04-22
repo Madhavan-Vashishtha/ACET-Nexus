@@ -281,7 +281,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // PRE-CALCULATE OVERALL ATTENDANCE % FOR EACH STUDENT
-            // 1. Fetch all sessions for my allocated classes
             const sessQ = query(collection(db, "attendance_sessions"), where("teacherId", "==", currentTeacherId));
             const allSessionsSnap = await getDocs(sessQ);
             let sessionCountsBySection = {};
@@ -290,7 +289,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionCountsBySection[sec] = (sessionCountsBySection[sec] || 0) + 1;
             });
 
-            // 2. Fetch attendance marks for each student
             for(let i=0; i<filteredStudents.length; i++) {
                 const st = filteredStudents[i];
                 const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", st.id));
@@ -300,7 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 filteredStudents[i].attendancePct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
             }
 
-            // RENDER HTML TABLE
             let html = `
             <div class="overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
@@ -355,86 +352,106 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 5. GLOBAL REMARK SYSTEM =================
-    const remarkModal = document.getElementById("globalRemarkModal");
-    const remarkSelClass = document.getElementById("remarkSelClass");
-    const remarkSelStudent = document.getElementById("remarkSelStudent");
-
-    if(!isViewOnly && remarkModal) {
-        document.addEventListener("click", async (e) => {
-            if(e.target.closest(".btn-quick-remark")) {
-                const btn = e.target.closest(".btn-quick-remark");
-                const sid = btn.getAttribute("data-sid");
-                const sname = btn.getAttribute("data-sname");
-                if(remarkSelClass) remarkSelClass.innerHTML = `<option value="">Direct Selection</option>`;
-                if(remarkSelStudent) remarkSelStudent.innerHTML = `<option value="${sid}">${sname}</option>`;
-                remarkModal.classList.remove("hidden");
+    // ================= 5. GLOBAL REMARK SYSTEM (CRASH-PROOF EVENT DELEGATION) =================
+    // Use document.addEventListener to handle clicks on dynamically generated elements
+    document.addEventListener("click", async (e) => {
+        // 1. Quick Remark Button from Student Table
+        if (e.target.closest(".btn-quick-remark")) {
+            const btn = e.target.closest(".btn-quick-remark");
+            const sid = btn.getAttribute("data-sid");
+            const sname = btn.getAttribute("data-sname");
+            
+            const rModal = document.getElementById("globalRemarkModal");
+            const rSelClass = document.getElementById("remarkSelClass");
+            const rSelStudent = document.getElementById("remarkSelStudent");
+            
+            if (!isViewOnly && rModal) {
+                if(rSelClass) rSelClass.innerHTML = `<option value="">Direct Selection</option>`;
+                if(rSelStudent) rSelStudent.innerHTML = `<option value="${sid}">${sname}</option>`;
+                rModal.classList.remove("hidden");
             }
-        });
+        }
 
-        const btnOpenGlobalRemark = document.getElementById("btnOpenGlobalRemark");
-        if(btnOpenGlobalRemark) {
-            btnOpenGlobalRemark.addEventListener("click", () => {
-                if(remarkSelStudent) remarkSelStudent.innerHTML = '<option value="">Select Class First</option>';
-                remarkModal.classList.remove("hidden");
-            });
+        // 2. Open Global Remark Modal from Header Button
+        if (e.target.closest("#btnOpenGlobalRemark")) {
+            const rModal = document.getElementById("globalRemarkModal");
+            const rSelStudent = document.getElementById("remarkSelStudent");
+            
+            if (!isViewOnly && rModal) {
+                if(rSelStudent) rSelStudent.innerHTML = '<option value="">Select Class First</option>';
+                rModal.classList.remove("hidden");
+            }
         }
         
-        const btnCloseGlobalRemark = document.getElementById("btnCloseGlobalRemark");
-        if(btnCloseGlobalRemark) {
-            btnCloseGlobalRemark.addEventListener("click", () => {
-                remarkModal.classList.add("hidden");
-            });
+        // 3. Close Global Remark Modal
+        if (e.target.closest("#btnCloseGlobalRemark")) {
+            const rModal = document.getElementById("globalRemarkModal");
+            if (rModal) rModal.classList.add("hidden");
         }
 
-        if(remarkSelClass) {
-            remarkSelClass.addEventListener("change", async () => {
-                const sec = remarkSelClass.value;
-                if(!sec) return;
-                
-                if(remarkSelStudent) remarkSelStudent.innerHTML = '<option value="">Fetching...</option>';
+        // 4. Submit Global Remark
+        if (e.target.closest("#btnSubmitGlobalRemark")) {
+            const submitBtn = e.target.closest("#btnSubmitGlobalRemark");
+            const rSelStudent = document.getElementById("remarkSelStudent");
+            const remarkTextEl = document.getElementById("remarkText");
+            
+            if(isViewOnly) return;
+
+            const sid = rSelStudent ? rSelStudent.value : null;
+            const text = remarkTextEl ? remarkTextEl.value.trim() : "";
+            
+            if(!sid || !text) {
+                alert("Select student and type remark!");
+                return;
+            }
+
+            submitBtn.innerHTML = "Sending..."; 
+            submitBtn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "remarks"), { 
+                    studentId: sid, 
+                    teacherId: currentTeacherId, 
+                    remark: text, 
+                    timestamp: serverTimestamp() 
+                });
+                alert("Remark sent successfully!");
+                const rModal = document.getElementById("globalRemarkModal");
+                if(rModal) rModal.classList.add("hidden"); 
+                if(remarkTextEl) remarkTextEl.value = "";
+            } catch(error) { 
+                console.error(error);
+                alert("Failed to send remark."); 
+            } finally { 
+                submitBtn.innerHTML = "Send Remark"; 
+                submitBtn.disabled = false; 
+            }
+        }
+    });
+
+    // Event Delegation for "Change" events (Dropdowns)
+    document.addEventListener("change", async (e) => {
+        // Class Selection inside Remark Modal
+        if (e.target.id === "remarkSelClass") {
+            const sec = e.target.value;
+            if(!sec) return;
+            
+            const rSelStudent = document.getElementById("remarkSelStudent");
+            if(rSelStudent) rSelStudent.innerHTML = '<option value="">Fetching...</option>';
+            
+            try {
                 const sq = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", sec));
                 const sSnap = await getDocs(sq);
                 
-                if(remarkSelStudent) {
-                    remarkSelStudent.innerHTML = '<option value="">-- Choose Student --</option>';
-                    sSnap.forEach(d => remarkSelStudent.innerHTML += `<option value="${d.id}">${d.data().name}</option>`);
+                if(rSelStudent) {
+                    rSelStudent.innerHTML = '<option value="">-- Choose Student --</option>';
+                    sSnap.forEach(d => rSelStudent.innerHTML += `<option value="${d.id}">${d.data().name}</option>`);
                 }
-            });
+            } catch(error) {
+                console.error("Error fetching students:", error);
+            }
         }
-
-        const btnSubmitGlobalRemark = document.getElementById("btnSubmitGlobalRemark");
-        if(btnSubmitGlobalRemark) {
-            btnSubmitGlobalRemark.addEventListener("click", async () => {
-                const sid = remarkSelStudent ? remarkSelStudent.value : null;
-                const text = document.getElementById("remarkText") ? document.getElementById("remarkText").value.trim() : "";
-                if(!sid || !text) {
-                    alert("Select student and type remark!");
-                    return;
-                }
-
-                btnSubmitGlobalRemark.innerHTML = "Sending..."; 
-                btnSubmitGlobalRemark.disabled = true;
-
-                try {
-                    await addDoc(collection(db, "remarks"), { 
-                        studentId: sid, 
-                        teacherId: currentTeacherId, 
-                        remark: text, 
-                        timestamp: serverTimestamp() 
-                    });
-                    alert("Remark sent successfully!");
-                    remarkModal.classList.add("hidden"); 
-                    if(document.getElementById("remarkText")) document.getElementById("remarkText").value = "";
-                } catch(e) { 
-                    alert("Failed to send remark."); 
-                } finally { 
-                    btnSubmitGlobalRemark.innerHTML = "Send Remark"; 
-                    btnSubmitGlobalRemark.disabled = false; 
-                }
-            });
-        }
-    }
+    });
 
     // ================= 6. DYNAMIC QR LIVE SESSION LOGIC =================
     const sessionModal = document.getElementById("sessionModal");
@@ -753,40 +770,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 } catch(err) {
                     console.error("Error fetching submissions:", err);
                     if(submissionsList) submissionsList.innerHTML = "<p class='text-red-500 text-sm'>Error fetching submissions.</p>";
-                }
-            }
-        });
-    }
-
-    if(!isViewOnly && submissionsList) {
-        submissionsList.addEventListener("click", async (e) => {
-            if(e.target.closest('.btn-save-remark')) {
-                const btn = e.target.closest('.btn-save-remark');
-                const subId = btn.getAttribute("data-subid");
-                const studentId = btn.getAttribute("data-studentid");
-                const remarkInput = document.getElementById(`remark-${subId}`);
-                const remarkText = remarkInput ? remarkInput.value.trim() : "";
-
-                if(!remarkText) {
-                    alert("Please type a remark before saving.");
-                    return;
-                }
-
-                try {
-                    await addDoc(collection(db, "remarks"), {
-                        studentId: studentId, 
-                        teacherId: currentTeacherId, 
-                        remark: remarkText, 
-                        submissionId: subId, 
-                        timestamp: serverTimestamp()
-                    });
-                    
-                    btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Sent`;
-                    btn.classList.replace("bg-brand", "bg-slate-300");
-                    btn.classList.replace("hover:bg-emerald-600", "hover:bg-slate-300");
-                    btn.disabled = true;
-                } catch(err) {
-                    console.error(err); alert("Failed to send remark.");
                 }
             }
         });
