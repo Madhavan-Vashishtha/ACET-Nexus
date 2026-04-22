@@ -42,6 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 targetView.style.display = "block"; 
             }
 
+            const aside = document.querySelector("aside");
+            if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
+                aside.classList.remove("menu-open");
+                document.body.style.overflow = "auto";
+            }
+
             if (activeTabId === defaultTabId && targetId !== defaultTabId) {
                 history.pushState({ tab: targetId }, ""); 
             } else {
@@ -103,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if(document.getElementById("userAvatarInitials")) document.getElementById("userAvatarInitials").innerText = initials;
 
-                // Load sequentially safely
                 await loadMyClasses();
                 await loadRecentSessionsLog();
                 await loadMyPostedAssignments();
@@ -114,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 2. LOAD CLASSES (CRASH-PROOF) =================
+    // ================= 2. LOAD CLASSES (CRASH-PROOF & DROPDOWN POPULATOR) =================
     async function loadMyClasses() {
         try {
             const q = query(collection(db, "teacher_assignments"), where("teacherId", "==", currentTeacherId));
@@ -140,27 +145,36 @@ document.addEventListener("DOMContentLoaded", () => {
             for (const docSnap of snapshot.docs) {
                 const data = docSnap.data();
                 const secStr = data.sectionId.trim().toUpperCase();
-                myAllocatedClasses.push(secStr);
+                
+                // Store globally to use in loadMyStudents
+                if(!myAllocatedClasses.includes(secStr)) {
+                    myAllocatedClasses.push(secStr);
+                }
 
                 // Fetch Total Students Enrolled
-                const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", secStr));
-                const totalStudents = (await getDocs(stQ)).size;
+                let totalStudents = 0;
+                try {
+                    const stQ = query(collection(db, "users"), where("role", "==", "student"), where("section", "==", secStr));
+                    totalStudents = (await getDocs(stQ)).size;
+                } catch(e) { console.error("Error counting students:", e); }
 
                 // Fetch Last Attendance Percentage
                 let lastAttPercent = 0;
-                const lastSessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr), orderBy("createdAt", "desc"), limit(1));
-                const lastSessSnap = await getDocs(lastSessQ);
-                
-                if(!lastSessSnap.empty) {
-                    const sessId = lastSessSnap.docs[0].id;
-                    const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", sessId));
-                    const attCount = (await getDocs(marksQ)).size;
-                    lastAttPercent = totalStudents > 0 ? Math.round((attCount/totalStudents)*100) : 0;
-                }
+                try {
+                    const lastSessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", secStr), orderBy("createdAt", "desc"), limit(1));
+                    const lastSessSnap = await getDocs(lastSessQ);
+                    
+                    if(!lastSessSnap.empty) {
+                        const sessId = lastSessSnap.docs[0].id;
+                        const marksQ = query(collection(db, "attendance_marks"), where("sessionId", "==", sessId));
+                        const attCount = (await getDocs(marksQ)).size;
+                        lastAttPercent = totalStudents > 0 ? Math.round((attCount/totalStudents)*100) : 0;
+                    }
+                } catch(e) { console.error("Error calculating percent:", e); }
 
                 if(container) {
                     container.innerHTML += `
-                        <div class="p-6 border border-slate-100 bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform">
+                        <div class="p-6 border border-slate-100 bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.03)] hover:-translate-y-1 transition-transform">
                             <div class="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
                                 <div class="bg-blue-50 text-blue-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chalkboard"></i></div>
                                 <span class="bg-brand/10 text-brand font-black px-3 py-1 rounded-md text-[10px] uppercase tracking-wider">Sec ${secStr}</span>
@@ -174,6 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     `;
                 }
 
+                // Populate Dropdowns for Attendance, Assignments, Remarks
                 const optionHTML = `<option value="${secStr}|${data.subjectName}">${data.subjectName} (Sec: ${secStr})</option>`;
                 if(selClass) selClass.innerHTML += optionHTML;
                 if(assignSelClass) assignSelClass.innerHTML += optionHTML;
@@ -181,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (e) {
             console.error("Error loading classes:", e);
+            if(document.getElementById("myClassesContainer")) document.getElementById("myClassesContainer").innerHTML = "<p class='text-red-500'>Error loading classes.</p>";
         }
     }
 
@@ -226,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch(e) { console.error("Error loading session logs:", e); }
     }
 
-    // ================= 4. LOAD MY STUDENTS =================
+    // ================= 4. LOAD MY STUDENTS (ADMIN EXACT DESIGN) =================
     async function loadMyStudents() {
         try {
             const studentContainer = document.getElementById("myStudentsListContainer");
@@ -241,28 +257,55 @@ document.addEventListener("DOMContentLoaded", () => {
             const snapshot = await getDocs(q);
 
             if(snapshot.empty) {
-                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections. Make sure students have updated their section EXACTLY in their profile.</p>";
+                studentContainer.innerHTML = "<p class='text-slate-500 text-center py-10'>No students found in your allocated sections.</p>";
                 return;
             }
 
-            let html = `<table class="w-full text-left min-w-[600px]"><thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Student Details</th><th class="px-6 py-4">Section</th><th class="px-6 py-4 text-right">Actions</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+            let html = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[700px]">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 tracking-wider">
+                        <tr>
+                            <th class="px-6 md:px-8 py-5 font-bold">Student Details</th>
+                            <th class="px-6 md:px-8 py-5 font-bold">Section</th>
+                            <th class="px-6 md:px-8 py-5 font-bold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">`;
             
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
-                html += `<tr class="hover:bg-slate-50 transition">
-                    <td class="px-6 py-4">
-                        <p class="font-bold text-slate-800">${data.name}</p>
-                        <p class="text-[11px] text-slate-500">${data.email}</p>
-                    </td>
-                    <td class="px-6 py-4"><span class="font-black text-blue-600 bg-blue-50 rounded-lg inline-block px-3 py-1 text-xs">${data.section}</span></td>
-                    <td class="px-6 py-4 text-right">
-                        <button class="bg-slate-100 hover:bg-brand hover:text-white text-slate-600 px-4 py-2 rounded-lg text-xs font-bold transition mr-2" onclick="window.open('/student-dashboard?viewAs=${docSnap.id}', '_blank')">Dashboard</button>
-                    </td>
-                </tr>`;
+                html += `
+                    <tr class="hover:bg-slate-50/50 transition">
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600"><i class="fa-solid fa-user-graduate"></i></div>
+                                <div>
+                                    <p class="font-bold text-slate-800">${data.name}</p>
+                                    <p class="text-xs text-slate-500">${data.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5">
+                            <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">${data.section || 'Not Assigned'}</span>
+                        </td>
+                        <td class="px-8 py-5 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button class="bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${docSnap.id}', '_blank')">Dashboard</button>
+                                <button class="btn-quick-remark bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm" data-sid="${docSnap.id}" data-sname="${data.name}">Remark</button>
+                            </div>
+                        </td>
+                    </tr>`;
             });
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             studentContainer.innerHTML = html;
-        } catch (e) { console.error("Error loading students:", e); }
+
+        } catch (e) { 
+            console.error("Error loading students:", e); 
+            if(document.getElementById("myStudentsListContainer")) {
+                document.getElementById("myStudentsListContainer").innerHTML = "<p class='text-red-500 text-center py-10'>Error loading students.</p>";
+            }
+        }
     }
 
     // ================= 5. GLOBAL REMARK SYSTEM =================
@@ -380,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const [sectionId, subjectName] = selectedValue.split("|");
                 
-                btnStartSession.innerHTML = `Generating...`;
+                btnStartSession.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating QR...`;
                 btnStartSession.disabled = true;
                 
                 try {
