@@ -20,39 +20,46 @@ document.addEventListener("DOMContentLoaded", () => {
             // Add active to clicked
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(79,70,229,0.4)]");
             btn.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
-            document.getElementById(btn.getAttribute("data-target")).classList.add("active");
+            
+            const targetId = btn.getAttribute("data-target");
+            document.getElementById(targetId).classList.add("active");
+
+            // 🔥 REPLACE STATE FIX FOR LOOP PREVENTION
+            history.replaceState({ tab: targetId }, "");
         });
     });
 
     // ================= 1. AUTHENTICATE & LOAD ADMIN DATA =================
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().role === "admin") {
-                const adminName = userDoc.data().name || "Admin";
-                document.getElementById("adminName").innerText = adminName;
-                document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-                
-                // Set initials for avatar
-                const nameParts = adminName.trim().split(/\s+/);
-                let initials = "A";
-                if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
-                else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
-                document.getElementById("userAvatarInitials").innerText = initials;
+        if (!user) {
+            // 🔥 STRICT SECURITY REDIRECT (No bypass)
+            window.location.replace("/login");
+            return;
+        }
 
-                // Load initial data
-                loadStats();
-                loadPendingApprovals();
-                loadSections();
-                loadStudents();
-                loadTeachers();
-                loadAllocations();
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists() && userDoc.data().role === "admin") {
+            const adminName = userDoc.data().name || "Admin";
+            document.getElementById("adminName").innerText = adminName;
+            document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            
+            // Set initials for avatar
+            const nameParts = adminName.trim().split(/\s+/);
+            let initials = "A";
+            if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
+            else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+            document.getElementById("userAvatarInitials").innerText = initials;
 
-            } else {
-                window.location.href = "/login";
-            }
+            // Load initial data
+            loadStats();
+            loadPendingApprovals();
+            loadSections();
+            loadStudents();
+            loadTeachers();
+            loadAllocations();
+
         } else {
-            window.location.href = "/login";
+            window.location.replace("/login");
         }
     });
 
@@ -206,7 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td class="px-8 py-5 text-sm font-bold text-slate-600">${data.username || '-'}</td>
                     <td class="px-8 py-5"><span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">${data.section || 'Not Assigned'}</span></td>
                     <td class="px-8 py-5 text-right">
-                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition" onclick="window.location.href='/profile'">View Profile</button>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition" onclick="window.open('/profile?viewAs=${docSnap.id}', '_blank')">View Profile</button>
                     </td>
                 </tr>
             `;
@@ -275,7 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const teacherDoc = await getDoc(doc(db, "users", data.teacherId));
             const teacherName = teacherDoc.exists() ? teacherDoc.data().name : "Unknown";
 
-            // 🔥 Added the Trash Delete Button Here
             container.innerHTML += `
                 <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2">
                     <div>
@@ -300,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     await deleteDoc(doc(db, "teacher_assignments", allocationId)); 
                     alert("Allocation deleted successfully!");
-                    loadAllocations(); // Refresh the list
+                    loadAllocations(); 
                 } catch (error) {
                     console.error("Error deleting:", error);
                     alert("Failed to delete allocation.");
@@ -309,8 +315,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ================= 9. LOGOUT =================
+    // ================= 9. LOGOUT (REPLACE FIX) =================
     document.getElementById("btnLogout").addEventListener("click", () => {
-        signOut(auth).then(() => { window.location.href = "/login"; });
+        signOut(auth).then(() => { window.location.replace("/login"); });
     });
 });

@@ -276,10 +276,11 @@
             });
         });
 
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC
+        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (LOOP KILLER)
         history.replaceState({ tab: 'view-overview' }, ""); 
 
         window.addEventListener("popstate", (e) => {
+            const aside = document.querySelector("aside");
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
@@ -287,12 +288,14 @@
             }
 
             const activeTab = document.querySelector('.tab-content.active');
+            // Agar overview par nahi hai, toh wapas overview pe le aao (bina history badhaye)
             if (activeTab && activeTab.id !== 'view-overview') {
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.getElementById('view-overview').classList.add('active');
-                history.pushState({ tab: 'view-overview' }, ""); 
+                history.replaceState({ tab: 'view-overview' }, ""); 
             } else {
-                window.location.href = "/";
+                // 🔥 ULTIMATE FIX: Agar overview par hi back dabaya, toh seedha Home phek do (No loop)
+                window.location.replace("/"); 
             }
         });
 

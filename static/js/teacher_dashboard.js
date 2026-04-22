@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             views.forEach(v => {
                 v.classList.remove("active");
-                v.style.display = "none"; // Explicit hide to fix mobile clash
+                v.style.display = "none"; 
             });
 
             btn.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
@@ -34,10 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const targetView = document.getElementById(targetId);
             if(targetView) {
                 targetView.classList.add("active");
-                targetView.style.display = "block"; // Explicit show
+                targetView.style.display = "block"; 
             }
 
-            // Auto close mobile menu if open
+            // 🔥 REPLACE STATE FIX
             const aside = document.querySelector("aside");
             if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
@@ -46,37 +46,39 @@ document.addEventListener("DOMContentLoaded", () => {
                     history.replaceState({ tab: targetId }, ""); 
                 }
             } else {
-                history.pushState({ tab: targetId }, "");
+                history.replaceState({ tab: targetId }, "");
             }
         });
     });
 
     // ================= 1. AUTHENTICATE & IMPERSONATION =================
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const loggedInDoc = await getDoc(doc(db, "users", user.uid));
-            const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
+        if (!user) {
+            // 🔥 STRICT SECURITY REDIRECT
+            window.location.replace("/login");
+            return;
+        }
 
-            if (viewAsId) {
-                if (loggedInRole === "admin") {
-                    isViewOnly = true;
-                    currentTeacherId = viewAsId; 
-                    setupImpersonationUI();
-                    await loadTeacherData(viewAsId);
-                } else {
-                    alert("Unauthorized Access!");
-                    window.location.href = "/login";
-                }
+        const loggedInDoc = await getDoc(doc(db, "users", user.uid));
+        const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
+
+        if (viewAsId) {
+            if (loggedInRole === "admin") {
+                isViewOnly = true;
+                currentTeacherId = viewAsId; 
+                setupImpersonationUI();
+                await loadTeacherData(viewAsId);
             } else {
-                if (loggedInRole === "teacher") {
-                    currentTeacherId = user.uid;
-                    await loadTeacherData(user.uid);
-                } else {
-                    window.location.href = "/login";
-                }
+                alert("Unauthorized Access!");
+                window.location.replace("/login");
             }
         } else {
-            window.location.href = "/login";
+            if (loggedInRole === "teacher") {
+                currentTeacherId = user.uid;
+                await loadTeacherData(user.uid);
+            } else {
+                window.location.replace("/login");
+            }
         }
     });
 
@@ -119,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadMyClasses();
             await loadMyPostedAssignments();
-            await loadMyStudents(); // Load students after classes
+            await loadMyStudents(); 
         }
     }
 
@@ -495,12 +497,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 7. LOGOUT =================
+    // ================= 7. LOGOUT (REPLACE FIX) =================
     const btnLogout = document.getElementById("btnLogout");
     if(btnLogout) {
         btnLogout.addEventListener("click", () => {
             if(isViewOnly) window.close(); 
-            else signOut(auth).then(() => window.location.href = "/login");
+            else signOut(auth).then(() => window.location.replace("/login"));
         });
     }
 });

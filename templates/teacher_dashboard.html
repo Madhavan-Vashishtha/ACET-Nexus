@@ -254,9 +254,11 @@
             });
         });
 
+        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (LOOP KILLER)
         history.replaceState({ tab: 'view-dashboard' }, ""); 
 
         window.addEventListener("popstate", (e) => {
+            const aside = document.querySelector("aside");
             if (aside && aside.classList.contains("menu-open")) {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
@@ -267,9 +269,10 @@
             if (activeTab && activeTab.id !== 'view-dashboard') {
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.getElementById('view-dashboard').classList.add('active');
-                history.pushState({ tab: 'view-dashboard' }, ""); 
+                history.replaceState({ tab: 'view-dashboard' }, ""); 
             } else {
-                window.location.href = "/";
+                // 🔥 ULTIMATE FIX: Seedha Home
+                window.location.replace("/"); 
             }
         });
     });

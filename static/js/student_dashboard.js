@@ -45,40 +45,44 @@ document.addEventListener("DOMContentLoaded", () => {
                 aside.classList.remove("menu-open");
                 document.body.style.overflow = "auto";
                 if(history.state && history.state.menuOpen) {
+                    // 🔥 REPLACE STATE FIX
                     history.replaceState({ tab: targetId }, ""); 
                 }
             } else {
-                history.pushState({ tab: targetId }, "");
+                // 🔥 REPLACE STATE FIX
+                history.replaceState({ tab: targetId }, "");
             }
         });
     });
 
     // ================= 1. AUTHENTICATE & ISOLATED LOAD =================
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const loggedInDoc = await getDoc(doc(db, "users", user.uid));
-            const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
+        if (!user) {
+            // 🔥 STRICT SECURITY REDIRECT
+            window.location.replace("/login");
+            return;
+        }
 
-            if (viewAsId) {
-                if (loggedInRole === "admin" || loggedInRole === "teacher") {
-                    isViewOnly = true;
-                    currentStudentId = viewAsId;
-                    setupImpersonationUI();
-                    await safeLoadStudentData(viewAsId);
-                } else {
-                    alert("Unauthorized Access!");
-                    window.location.href = "/login";
-                }
+        const loggedInDoc = await getDoc(doc(db, "users", user.uid));
+        const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
+
+        if (viewAsId) {
+            if (loggedInRole === "admin" || loggedInRole === "teacher") {
+                isViewOnly = true;
+                currentStudentId = viewAsId;
+                setupImpersonationUI();
+                await safeLoadStudentData(viewAsId);
             } else {
-                if (loggedInRole === "student") {
-                    currentStudentId = user.uid;
-                    await safeLoadStudentData(user.uid);
-                } else {
-                    window.location.href = "/login";
-                }
+                alert("Unauthorized Access!");
+                window.location.replace("/login");
             }
         } else {
-            window.location.href = "/login";
+            if (loggedInRole === "student") {
+                currentStudentId = user.uid;
+                await safeLoadStudentData(user.uid);
+            } else {
+                window.location.replace("/login");
+            }
         }
     });
 
@@ -93,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 🔥 ISOLATED LOADER: Prevents one missing data block from crashing the whole UI
     async function safeLoadStudentData(targetUid) {
         try {
             const userDoc = await getDoc(doc(db, "users", targetUid));
@@ -118,12 +121,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 setupEditableTarget();
 
-                // Run independent blocks safely
-                try { listenForLiveSession(); } catch(e) { console.error("Live Session Error:", e); }
-                try { await loadMyHistoryAndGraph(); } catch(e) { console.error("History/Graph Error:", e); }
-                try { await loadMyAssignments(); } catch(e) { console.error("Assignments Error:", e); }
-                try { await loadMyRemarks(); } catch(e) { console.error("Remarks Error:", e); }
-                try { await loadMySubjects(); } catch(e) { console.error("Subjects Error:", e); }
+                try { listenForLiveSession(); } catch(e) { console.error(e); }
+                try { await loadMyHistoryAndGraph(); } catch(e) { console.error(e); }
+                try { await loadMyAssignments(); } catch(e) { console.error(e); }
+                try { await loadMyRemarks(); } catch(e) { console.error(e); }
+                try { await loadMySubjects(); } catch(e) { console.error(e); }
             }
         } catch (error) {
             console.error("Critical User Load Error:", error);
@@ -229,11 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 5. HISTORY, GRAPHS & LOGS =================
+    // ================= 5. HISTORY & GRAPHS =================
     async function loadMyHistoryAndGraph() {
         if(currentStudentSection === "Unassigned") return;
 
-        // Calculate Totals
         const totalSessionsSnap = await getDocs(query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection)));
         const totalClassesHeld = totalSessionsSnap.size;
         
@@ -242,10 +243,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const myAttendanceSnap = await getDocs(query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId), orderBy("timestamp", "desc")));
         const classesAttended = myAttendanceSnap.size;
 
-        // Load Recent Logs
-        const container1 = document.getElementById("recentActivityContainer");
-        const container2 = document.getElementById("myHistoryContainer");
-        
         const renderLogs = (container) => {
             if(!container) return;
             container.innerHTML = "";
@@ -272,10 +269,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        renderLogs(container1);
-        renderLogs(container2);
+        renderLogs(document.getElementById("recentActivityContainer"));
+        renderLogs(document.getElementById("myHistoryContainer"));
 
-        // Calculate Percentage
         let percentage = totalClassesHeld > 0 ? Math.round((classesAttended / totalClassesHeld) * 100) : 0;
         let missedClasses = totalClassesHeld > 0 ? totalClassesHeld - classesAttended : 0;
 
@@ -289,7 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawChart(attended, missed) {
         const ctx = document.getElementById('attendanceChart');
         if(!ctx) return;
-
         if(attendanceChartInstance) attendanceChartInstance.destroy(); 
         const dataVals = (attended === 0 && missed === 0) ? [1] : [attended, missed];
         const bgColors = (attended === 0 && missed === 0) ? ['#e2e8f0'] : ['#4361ee', '#e2e8f0'];
@@ -304,7 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawDummyLineChart() {
         const ctx = document.getElementById('attendanceLineChart');
         if(!ctx) return;
-
         if(attendanceLineChartInstance) attendanceLineChartInstance.destroy();
         
         attendanceLineChartInstance = new Chart(ctx.getContext('2d'), {
@@ -454,12 +448,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 8. LOGOUT =================
+    // ================= 8. LOGOUT (REPLACE FIX) =================
     const btnLogout = document.getElementById("btnLogout");
     if(btnLogout) {
         btnLogout.addEventListener("click", () => {
             if(isViewOnly) window.close(); 
-            else signOut(auth).then(() => window.location.href = "/login");
+            else signOut(auth).then(() => window.location.replace("/login"));
         });
     }
 });
