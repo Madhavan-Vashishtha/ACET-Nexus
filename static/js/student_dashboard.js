@@ -1,6 +1,7 @@
-import { auth, db } from "./firebase.js";
+import { auth, db, storage } from "./firebase.js"; 
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, query, where, getDocs, addDoc, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, query, where, getDocs, addDoc, doc, getDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -108,10 +109,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = userDoc.data();
                 const fullName = data.name || "Student";
                 
-                if(document.getElementById("welcomeText")) document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
+                if(document.getElementById("welcomeText")) {
+                    document.getElementById("welcomeText").innerText = `${fullName} ${isViewOnly ? '(View Mode)' : ''}`;
+                }
                 
                 currentStudentSection = data.section ? data.section.trim().toUpperCase() : "Unassigned";
-                if(document.getElementById("studentSectionBadge")) document.getElementById("studentSectionBadge").innerText = `SEC: ${currentStudentSection}`;
+                
+                if(document.getElementById("studentSectionBadge")) {
+                    document.getElementById("studentSectionBadge").innerText = `SEC: ${currentStudentSection}`;
+                }
                 
                 if(document.getElementById("currentDateDisplay")) {
                     document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
@@ -119,12 +125,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const nameParts = fullName.trim().split(/\s+/);
                 let initials = "U";
-                if (nameParts.length === 1) initials = nameParts[0][0].toUpperCase();
-                else if (nameParts.length >= 2) initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
-                if(document.getElementById("userAvatarInitials")) document.getElementById("userAvatarInitials").innerText = initials;
+                if (nameParts.length === 1) {
+                    initials = nameParts[0][0].toUpperCase();
+                } else if (nameParts.length >= 2) {
+                    initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                }
+                if(document.getElementById("userAvatarInitials")) {
+                    document.getElementById("userAvatarInitials").innerText = initials;
+                }
                 
                 setupEditableTarget();
 
+                try { listenForLiveSession(); } catch(e) { console.error("Live Session Error:", e); }
                 try { await loadMyHistoryAndGraph(); } catch(e) { console.error("History/Graph Error:", e); }
                 try { await loadMyAssignments(); } catch(e) { console.error("Assignments Error:", e); }
                 try { await loadMyRemarks(); } catch(e) { console.error("Remarks Error:", e); }
@@ -174,9 +186,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ================= 3. LIVE SESSION =================
-    // (Omitted in this specific snippet to keep it clean, but kept below)
-    
-    // ================= 5. HISTORY, GRAPHS & LOGS (JS SORTED) =================
+    function listenForLiveSession() {
+        if(currentStudentSection === "Unassigned") return;
+        const sessionQuery = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection), where("isActive", "==", true));
+
+        onSnapshot(sessionQuery, (snapshot) => {
+            const banner = document.getElementById("liveSessionBanner");
+            if(!banner) return;
+
+            if (!snapshot.empty) {
+                const sessionData = snapshot.docs[0].data();
+                activeSessionId = snapshot.docs[0].id;
+                
+                const liveSubjectName = document.getElementById("liveSubjectName");
+                if(liveSubjectName) liveSubjectName.innerText = sessionData.subject;
+                
+                const btnMarkPresent = document.getElementById("btnMarkPresent");
+                if(isViewOnly && btnMarkPresent) btnMarkPresent.classList.add("hidden");
+                
+                banner.classList.remove("hidden");
+                setTimeout(() => {
+                    banner.classList.remove("scale-95", "opacity-0");
+                    banner.classList.add("scale-100", "opacity-100");
+                }, 50);
+            } else {
+                activeSessionId = null;
+                banner.classList.remove("scale-100", "opacity-100");
+                banner.classList.add("scale-95", "opacity-0");
+                setTimeout(() => { banner.classList.add("hidden"); }, 500);
+            }
+        });
+    }
+
+    // ================= 4. HISTORY, GRAPHS & LOGS (JS SORTED) =================
     async function loadMyHistoryAndGraph() {
         if(currentStudentSection === "Unassigned") return;
 
@@ -187,7 +229,9 @@ document.addEventListener("DOMContentLoaded", () => {
         let allSessions = [];
         sessSnap.forEach(doc => {
             const data = doc.data();
-            if(data.createdAt) allSessions.push({ id: doc.id, ...data, time: data.createdAt.toDate().getTime() });
+            if(data.createdAt) {
+                allSessions.push({ id: doc.id, ...data, time: data.createdAt.toDate().getTime() });
+            }
         });
         
         // Sort Ascending Locally for the graph trend to go left-to-right properly
@@ -203,16 +247,24 @@ document.addEventListener("DOMContentLoaded", () => {
         marksSnap.forEach(doc => {
             const data = doc.data();
             attendedSet.add(data.sessionId);
-            if(data.timestamp) allMarks.push({ id: doc.id, ...data, time: data.timestamp.toDate().getTime() });
+            if(data.timestamp) {
+                allMarks.push({ id: doc.id, ...data, time: data.timestamp.toDate().getTime() });
+            }
         });
 
         const classesAttended = attendedSet.size;
         let percentage = totalHeld > 0 ? Math.round((classesAttended / totalHeld) * 100) : 0;
         let missedClasses = totalHeld > classesAttended ? totalHeld - classesAttended : 0;
 
-        if(document.getElementById("statTotalSessions")) document.getElementById("statTotalSessions").innerText = classesAttended; // Lectures Attended
-        if(document.getElementById("statAttPercent")) document.getElementById("statAttPercent").innerText = `${percentage}%`;
-        if(document.getElementById("graphPercentage")) document.getElementById("graphPercentage").innerText = `${percentage}%`;
+        if(document.getElementById("statTotalSessions")) {
+            document.getElementById("statTotalSessions").innerText = classesAttended; // Lectures Attended
+        }
+        if(document.getElementById("statAttPercent")) {
+            document.getElementById("statAttPercent").innerText = `${percentage}%`;
+        }
+        if(document.getElementById("graphPercentage")) {
+            document.getElementById("graphPercentage").innerText = `${percentage}%`;
+        }
         
         drawChart(classesAttended, missedClasses);
 
@@ -227,8 +279,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             allSessions.forEach(sessData => {
                 runTotal++;
-                if (attendedSet.has(sessData.id)) runAttended++;
-                
+                if (attendedSet.has(sessData.id)) {
+                    runAttended++;
+                }
                 let pct = Math.round((runAttended / runTotal) * 100);
                 let d = new Date(sessData.time);
                 labels.push(`${d.getDate()}/${d.getMonth()+1}`);
@@ -331,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ================= 6. LOAD ASSIGNMENTS =================
+    // ================= 5. LOAD ASSIGNMENTS =================
     async function loadMyAssignments() {
         const container = document.getElementById("myAssignmentsContainer");
         if(!container) return;
@@ -384,44 +437,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        if(document.getElementById("statAssignments")) document.getElementById("statAssignments").innerText = activeAssignmentsCount;
+        if(document.getElementById("statAssignments")) {
+            document.getElementById("statAssignments").innerText = activeAssignmentsCount;
+        }
     }
 
-    const submitModal = document.getElementById("submitModal");
-    if(!isViewOnly && submitModal) {
-        document.getElementById("myAssignmentsContainer").addEventListener("click", (e) => {
-            if (e.target.closest('.btn-submit-task')) {
-                const btn = e.target.closest('.btn-submit-task');
-                currentAssignmentIdToSubmit = btn.getAttribute("data-id");
-                document.getElementById("submitTaskTitle").innerText = btn.getAttribute("data-title");
-                submitModal.classList.remove("hidden");
-            }
-        });
-
-        document.getElementById("btnCloseSubmit").addEventListener("click", () => {
-            submitModal.classList.add("hidden");
-            document.getElementById("submitAnswer").value = "";
-        });
-
-        document.getElementById("btnConfirmSubmit").addEventListener("click", async () => {
-            const answerText = document.getElementById("submitAnswer").value.trim();
-            if(!answerText || !currentAssignmentIdToSubmit) return;
-
-            await addDoc(collection(db, "assignment_submissions"), {
-                assignmentId: currentAssignmentIdToSubmit, 
-                studentId: currentStudentId, 
-                sectionId: currentStudentSection, 
-                answer: answerText, 
-                submittedAt: serverTimestamp()
-            });
-
-            submitModal.classList.add("hidden");
-            document.getElementById("submitAnswer").value = "";
-            loadMyAssignments(); 
-        });
-    }
-
-    // ================= 7. FETCH REMARKS =================
+    // ================= 6. FETCH REMARKS =================
     async function loadMyRemarks() {
         const container = document.getElementById("myRemarksContainer");
         if(!container) return;
@@ -448,12 +469,123 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ================= 8. LOGOUT =================
-    const btnLogout = document.getElementById("btnLogout");
-    if(btnLogout) {
-        btnLogout.addEventListener("click", () => {
+    // ================= 7. GLOBAL EVENT DELEGATION (ALL CLICKS) =================
+    document.addEventListener("click", async (e) => {
+        
+        // Mark Present
+        if (!isViewOnly && e.target.closest('#btnMarkPresent')) {
+            const btnMarkPresent = e.target.closest('#btnMarkPresent');
+            if(!activeSessionId) return;
+            btnMarkPresent.disabled = true;
+            btnMarkPresent.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Marking...`;
+
+            try {
+                const checkQ = query(collection(db, "attendance_marks"), where("sessionId", "==", activeSessionId), where("studentId", "==", currentStudentId));
+                const checkSnap = await getDocs(checkQ);
+                if(!checkSnap.empty) {
+                    alert("You have already marked your attendance!");
+                    btnMarkPresent.innerHTML = `Done`;
+                    return;
+                }
+
+                await addDoc(collection(db, "attendance_marks"), {
+                    sessionId: activeSessionId, 
+                    studentId: currentStudentId, 
+                    sectionId: currentStudentSection, 
+                    timestamp: serverTimestamp(), 
+                    status: "Present"
+                });
+
+                btnMarkPresent.classList.replace("bg-white", "bg-green-500");
+                btnMarkPresent.classList.replace("text-brand", "text-white");
+                btnMarkPresent.innerHTML = `Marked Present`;
+                loadMyHistoryAndGraph(); 
+            } catch (error) {
+                console.error(error); 
+                alert("Error marking attendance.");
+                btnMarkPresent.disabled = false;
+                btnMarkPresent.innerHTML = `Mark Present Now`;
+            }
+        }
+
+        // Open Submit Task Modal
+        if (!isViewOnly && e.target.closest('.btn-submit-task')) {
+            const btn = e.target.closest('.btn-submit-task');
+            currentAssignmentIdToSubmit = btn.getAttribute("data-id");
+            const submitTaskTitle = document.getElementById("submitTaskTitle");
+            if(submitTaskTitle) submitTaskTitle.innerText = btn.getAttribute("data-title");
+            const submitModal = document.getElementById("submitModal");
+            if(submitModal) submitModal.classList.remove("hidden");
+        }
+
+        // Close Submit Task Modal
+        if (e.target.closest('#btnCloseSubmit')) {
+            const submitModal = document.getElementById("submitModal");
+            if(submitModal) submitModal.classList.add("hidden");
+            const submitAnswer = document.getElementById("submitAnswer");
+            if(submitAnswer) submitAnswer.value = "";
+            const submitFile = document.getElementById("submitFile");
+            if(submitFile) submitFile.value = "";
+        }
+
+        // 🔥 FIREBASE STORAGE UPLOAD LOGIC 🔥
+        if (!isViewOnly && e.target.closest('#btnConfirmSubmit')) {
+            const answerTextEl = document.getElementById("submitAnswer");
+            const answerText = answerTextEl ? answerTextEl.value.trim() : "";
+            const fileInput = document.getElementById("submitFile");
+            const file = fileInput ? fileInput.files[0] : null;
+
+            if(!answerText && !file) {
+                alert("Please provide an answer or attach a file!");
+                return;
+            }
+
+            const btn = document.getElementById("btnConfirmSubmit");
+            if(btn) {
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Uploading...`; 
+                btn.disabled = true;
+            }
+
+            try {
+                let fileUrl = "";
+                
+                // Upload to Storage if file exists
+                if (file) {
+                    const fileRef = ref(storage, `assignments/${currentStudentId}/${Date.now()}_${file.name}`);
+                    await uploadBytes(fileRef, file);
+                    fileUrl = await getDownloadURL(fileRef); 
+                }
+
+                // Save to Firestore
+                await addDoc(collection(db, "assignment_submissions"), {
+                    assignmentId: currentAssignmentIdToSubmit, 
+                    studentId: currentStudentId, 
+                    sectionId: currentStudentSection, 
+                    answer: answerText, 
+                    fileUrl: fileUrl, 
+                    submittedAt: serverTimestamp()
+                });
+
+                const submitModal = document.getElementById("submitModal");
+                if(submitModal) submitModal.classList.add("hidden");
+                if(answerTextEl) answerTextEl.value = "";
+                if(fileInput) fileInput.value = "";
+                loadMyAssignments(); 
+            } catch(error) { 
+                console.error("Upload error:", error);
+                alert("Failed to submit task."); 
+            } finally { 
+                if(btn) {
+                    btn.innerHTML = "Submit Task"; 
+                    btn.disabled = false; 
+                }
+            }
+        }
+
+        // Logout
+        if (e.target.closest('#btnLogout')) {
             if(isViewOnly) window.close(); 
             else signOut(auth).then(() => window.location.replace("/login"));
-        });
-    }
+        }
+    });
 });
