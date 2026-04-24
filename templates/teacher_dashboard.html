@@ -58,47 +58,51 @@
 
     <main class="flex-1 flex flex-col h-full bg-[#f8fafc] lg:rounded-tl-[40px] overflow-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.15)] relative min-w-0 lg:border-l lg:border-t border-slate-200">
         
-        <header class="h-20 lg:h-24 px-5 lg:px-10 flex items-center justify-between shrink-0 bg-white/90 backdrop-blur-md border-b border-slate-200 relative z-[60]">
-            <div class="flex items-center gap-3 lg:gap-4">
-                <button id="mobileMenuBtn" class="lg:hidden w-12 h-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 shadow-sm relative z-[100]">
-                    <i class="fa-solid fa-bars text-xl"></i>
+        <header class="h-20 lg:h-24 px-4 sm:px-6 lg:px-10 flex items-center justify-between shrink-0 bg-white/90 backdrop-blur-md border-b border-slate-200 relative z-40">
+            <div class="flex items-center gap-3">
+                <button id="mobileMenuBtn" class="lg:hidden w-11 h-11 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 shadow-sm active:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
+                <div id="mobileAvatarInitials" class="lg:hidden w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-500 text-white flex items-center justify-center text-lg font-black shadow-sm cursor-pointer border border-emerald-300 active:scale-95 transition-transform" onclick="window.location.href='/profile'">
+                    T
+                </div>
                 <div class="hidden sm:flex items-center bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm text-slate-500 text-xs font-bold">
                     <i class="fa-regular fa-calendar mr-2"></i> <span id="currentDateDisplay">Date</span>
                 </div>
             </div>
+            
             <div class="flex items-center gap-2 sm:gap-3">
-                <button id="btnOpenAssign" class="bg-slate-800 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-slate-900 font-bold shadow-md transition-all flex items-center gap-2 text-xs sm:text-sm">
+                <button id="btnOpenAssign" class="bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold shadow-md active:scale-95 transition-transform flex items-center gap-2 text-[11px] sm:text-xs">
                     <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">New Task</span>
                 </button>
-                <button id="btnOpenSessionModal" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 sm:px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 transition-transform flex items-center gap-2 text-xs sm:text-sm">
+                <button id="btnOpenSessionModal" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold shadow-md active:scale-95 transition-transform flex items-center gap-2 text-[11px] sm:text-xs">
                     <i class="fa-solid fa-stopwatch animate-pulse"></i> <span class="hidden sm:inline">Live</span>
                 </button>
             </div>
         </header>
 
-        <div id="mainScrollArea" class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-20"> 
+        <div id="mainScrollArea" class="flex-1 overflow-y-auto p-5 sm:p-6 lg:p-10 pt-8 lg:pt-10 pb-20"> 
             
             <section id="view-dashboard" class="tab-content active">
                 <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">Dashboard Overview</h1>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 mb-8">
-                    <div class="btn-jump-classes cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex items-center gap-4 lg:gap-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="btn-jump-classes cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex items-center gap-4 lg:gap-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
                         <div class="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl lg:text-2xl shrink-0"><i class="fa-solid fa-layer-group"></i></div>
                         <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">My Sections</p><p class="text-3xl lg:text-4xl font-black text-slate-800" id="statClasses">0</p></div>
                     </div>
-                    <div class="btn-jump-assignments cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex items-center gap-4 lg:gap-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="btn-jump-assignments cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex items-center gap-4 lg:gap-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
                         <div class="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl lg:text-2xl shrink-0"><i class="fa-solid fa-file-signature"></i></div>
                         <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Posted Tasks</p><p class="text-3xl lg:text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 lg:p-8 min-h-[300px] flex flex-col">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8 min-h-[300px] flex flex-col">
                     <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                         <h2 class="font-black text-lg lg:text-xl text-slate-800">Recent Class Sessions</h2>
                         <span class="text-[9px] lg:text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest border border-slate-100">Tap to manage</span>
                     </div>
-                    <div id="recentSessionsLog" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                    <div id="recentSessionsLog" class="flex-1 overflow-y-auto space-y-3 pr-1 sm:pr-2">
                         <p class="text-slate-500 text-sm font-medium"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Fetching logs...</p>
                     </div>
                 </div>
@@ -106,15 +110,16 @@
 
             <section id="view-classes" class="tab-content hidden">
                 <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">My Classes</h1>
-                <div id="myClassesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6"></div>
+                <div id="myClassesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6"></div>
             </section>
 
             <section id="view-students" class="tab-content hidden">
                 <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6">My Students</h1>
                 <div id="studentFiltersContainer" class="flex flex-wrap gap-2 mb-6"></div>
+                
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full overflow-hidden">
                     <div class="overflow-x-auto w-full">
-                        <table class="w-full text-left whitespace-nowrap">
+                        <table class="w-full text-left whitespace-nowrap min-w-[600px]">
                             <thead class="bg-slate-50 border-b border-slate-200">
                                 <tr>
                                     <th class="px-5 lg:px-6 py-4 text-[10px] lg:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Student Details</th>
@@ -124,7 +129,7 @@
                                 </tr>
                             </thead>
                             <tbody id="myStudentsListContainer" class="divide-y divide-slate-100 bg-white">
-                                <tr><td colspan="4" class="p-8 text-slate-500 text-sm font-medium text-center"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Loading students data...</td></tr>
+                                <tr><td colspan="4" class="p-8 text-slate-500 text-sm font-medium text-center"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Loading data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -160,7 +165,7 @@
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Remark</label>
                     <textarea id="remarkText" rows="3" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm font-medium" placeholder="Write your remark here..."></textarea>
                 </div>
-                <button id="btnSubmitGlobalRemark" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-black py-3.5 rounded-xl shadow-md transition-colors">Send Message</button>
+                <button id="btnSubmitGlobalRemark" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-black py-3.5 rounded-xl shadow-md transition-colors active:scale-95">Send Message</button>
             </div>
         </div>
     </div>
@@ -178,18 +183,18 @@
             </div>
             <div class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
                 <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
                         <h3 class="text-xs sm:text-sm font-black text-emerald-500 uppercase tracking-widest"><i class="fa-solid fa-user-check mr-2"></i> Present</h3>
                         <span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-lg text-xs" id="presentCount">0</span>
                     </div>
-                    <div id="presentList" class="space-y-2"></div>
+                    <div id="presentList" class="space-y-3"></div>
                 </div>
                 <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
                         <h3 class="text-xs sm:text-sm font-black text-red-500 uppercase tracking-widest"><i class="fa-solid fa-user-xmark mr-2"></i> Absent</h3>
                         <span class="bg-red-50 text-red-600 font-bold px-3 py-1 rounded-lg text-xs" id="absentCount">0</span>
                     </div>
-                    <div id="absentList" class="space-y-2"></div>
+                    <div id="absentList" class="space-y-3"></div>
                 </div>
             </div>
         </div>
@@ -198,13 +203,13 @@
 
 <div id="sessionModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-[400px] shadow-2xl border border-slate-200">
             <h2 class="text-xl font-black text-slate-800 mb-1">Live Attendance</h2>
             <p class="text-xs text-slate-500 mb-6">Select class to open a secure window.</p>
             <select id="selMyClass" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-6 outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-700"></select>
             <div class="flex gap-3 justify-end">
                 <button id="btnCloseSessionModal" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition">Cancel</button>
-                <button id="btnStartSession" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md transition-colors">Start Live</button>
+                <button id="btnStartSession" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md transition-colors active:scale-95">Start Live</button>
             </div>
         </div>
     </div>
@@ -216,7 +221,7 @@
             <button id="btnCloseQr" class="absolute top-4 right-4 w-10 h-10 bg-slate-50 hover:bg-red-50 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h2 class="text-xl sm:text-2xl font-black text-slate-800 mb-1 mt-2">Scan QR</h2>
             <p class="text-[10px] font-black text-brand mb-6 bg-brand/10 px-4 py-1.5 rounded-full uppercase tracking-widest" id="qrClassDisplay">Details</p>
-            <div id="qrCodeContainer" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 flex items-center justify-center min-h-[200px] min-w-[200px]"></div>
+            <div id="qrCodeContainer" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 flex items-center justify-center min-h-[220px] min-w-[220px]"></div>
             <div class="w-full flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-stopwatch text-2xl text-emerald-500 animate-pulse"></i>
@@ -236,8 +241,8 @@
 
 <div id="assignModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200">
-            <h2 class="text-xl lg:text-2xl font-black text-slate-800 mb-6">Create Assignment</h2>
+        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-[420px] shadow-2xl border border-slate-200">
+            <h2 class="text-xl font-black text-slate-800 mb-6">Create Assignment</h2>
             <div class="mb-4">
                 <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Select Section</label>
                 <select id="assignSelClass" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-700"></select>
@@ -252,7 +257,7 @@
             </div>
             <div class="flex gap-3 justify-end">
                 <button id="btnCloseAssign" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition">Cancel</button>
-                <button id="btnSaveAssign" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition">Post Task</button>
+                <button id="btnSaveAssign" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition active:scale-95">Post Task</button>
             </div>
         </div>
     </div>
@@ -262,8 +267,8 @@
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-[#f8fafc] rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             <div class="p-5 lg:p-6 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
-                <div>
-                    <h2 class="text-xl lg:text-2xl font-black text-slate-800 mb-0.5">Submissions</h2>
+                <div class="text-left">
+                    <h2 class="text-xl font-black text-slate-800 mb-0.5">Submissions</h2>
                     <p class="text-[10px] text-brand font-bold bg-brand/10 px-2 py-0.5 rounded border border-brand/20 inline-block uppercase tracking-widest" id="subModalTitle">Task</p>
                 </div>
                 <button id="btnCloseSubmissions" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
