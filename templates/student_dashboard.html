@@ -78,31 +78,33 @@
         <div id="mainScrollArea" class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-24"> 
 
             <div id="liveSessionBanner" class="hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-5 lg:p-6 rounded-3xl mb-8 flex flex-col sm:flex-row justify-between items-center sm:items-center shadow-lg transform transition-all duration-500 scale-95 opacity-0 gap-4 sm:gap-0">
-                <div class="flex items-center gap-4 lg:gap-5">
+                <div class="flex items-center gap-4 lg:gap-5 w-full sm:w-auto">
                     <div class="w-12 h-12 lg:w-14 lg:h-14 bg-white/20 rounded-full flex items-center justify-center text-xl lg:text-2xl animate-pulse shrink-0"><i class="fa-solid fa-satellite-dish"></i></div>
-                    <div>
+                    <div class="flex-1">
                         <p class="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-0.5">Live Attendance Call</p>
                         <h2 class="text-lg lg:text-2xl font-black truncate" id="liveSubjectName">Subject Name</h2>
                     </div>
                 </div>
-                <button id="btnMarkPresent" class="w-full sm:w-auto bg-white text-blue-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-black shadow-md transition-transform active:scale-95 text-sm uppercase tracking-wider">Mark Present</button>
+                <button id="btnMarkPresent" class="w-full sm:w-auto bg-white text-blue-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-black shadow-md transition-transform active:scale-95 text-sm uppercase tracking-wider shrink-0">Mark Present</button>
             </div>
 
             <section id="view-dashboard" class="tab-content active">
                 <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">Dashboard Overview</h1>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mb-8">
-                    <div class="btn-jump-attendance cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl shrink-0"><i class="fa-solid fa-clipboard-check"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Overall Att.</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statAttPercent">0%</p></div>
+                    <div class="btn-jump-attendance cursor-pointer bg-white p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-center sm:text-left">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 text-2xl shrink-0"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Overall Att.</p><p class="text-3xl lg:text-4xl font-black text-slate-800" id="statAttPercent">0%</p></div>
                     </div>
-                    <div id="btnOpenSubjAtt" class="cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-                        <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 text-xl shrink-0"><i class="fa-solid fa-chalkboard-user"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Lectures Att.</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statTotalSessions">0</p></div>
+                    
+                    <div id="btnOpenSubjAtt" class="cursor-pointer bg-white p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-center sm:text-left">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 text-2xl shrink-0"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Lectures Att.</p><p class="text-3xl lg:text-4xl font-black text-slate-800" id="statTotalSessions">0</p></div>
                     </div>
-                    <div class="btn-jump-assignments cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-                        <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-xl shrink-0"><i class="fa-solid fa-file-pen"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Pending Tasks</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statAssignments">0</p></div>
+                    
+                    <div class="btn-jump-assignments cursor-pointer bg-white p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-center sm:text-left">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-2xl shrink-0"><i class="fa-solid fa-file-pen"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Pending Tasks</p><p class="text-3xl lg:text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
                     </div>
                 </div>
 
