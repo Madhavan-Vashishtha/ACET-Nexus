@@ -1,237 +1,200 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}"> -->
+<style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+    
+    .tab-content { display: none !important; }
+    .tab-content.active { display: block !important; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script>
-    tailwind.config = {
-        theme: { extend: { fontFamily: { sans: ['Segoe UI', 'Inter', 'sans-serif'] }, colors: { brand: '#4361ee', darkBg: '#0b132b', darkHover: '#1c2541' } } }
-    }
+    tailwind.config = { theme: { extend: { colors: { brand: '#4361ee', darkBg: '#0b1120' } } } }
 </script>
 
-<section class="pt-[70px] h-screen w-full flex bg-darkBg overflow-hidden">
+<div class="h-screen w-full flex bg-[#0b1120] overflow-hidden pt-[90px]">
 
-    <aside class="w-64 bg-darkBg text-slate-400 flex flex-col z-20 shrink-0 relative h-full">
-        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer group" onclick="window.location.href='/profile'">
-            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-black shadow-[0_4px_20px_rgba(67,97,238,0.4)] mb-3 border-2 border-slate-800 transition-transform hover:scale-105 duration-300">
-                S
-            </div>
+    <div id="mobileOverlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1001] lg:hidden transition-opacity cursor-pointer"></div>
+
+    <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-[1002] w-64 bg-[#0b1120] border-r border-slate-800 transform -translate-x-full lg:relative lg:translate-x-0 flex flex-col shadow-2xl lg:shadow-none transition-transform duration-300">
+        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer transition-transform lg:hover:scale-105" onclick="window.location.href='/profile'">
+            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center text-2xl font-black shadow-[0_0_15px_rgba(67,97,238,0.4)] mb-3">S</div>
             <span id="welcomeText" class="hidden"></span>
-            <p class="text-[11px] font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full tracking-widest uppercase" id="studentSectionBadge">SEC: --</p>
+            <p class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full tracking-widest uppercase border border-blue-400/20" id="studentSectionBadge">SEC: --</p>
         </div>
 
-        <nav class="w-full px-4 py-4 flex flex-col gap-1.5 shrink-0">
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 bg-brand text-white rounded-xl font-medium shadow-[0_4px_15px_rgba(67,97,238,0.4)] transition text-left text-sm" data-target="view-dashboard">
+        <nav class="w-full px-4 py-6 flex flex-col gap-2 flex-1 overflow-y-auto">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold shadow-md transition-colors text-left text-sm" data-target="view-dashboard">
                 <i class="fa-solid fa-desktop w-5 text-center"></i> Dashboard
             </button>
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-attendance">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white lg:hover:bg-slate-800 rounded-xl font-bold transition-colors text-left text-sm" data-target="view-attendance">
                 <i class="fa-solid fa-chart-line w-5 text-center"></i> Attendance
             </button>
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-assignments">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white lg:hover:bg-slate-800 rounded-xl font-bold transition-colors text-left text-sm" data-target="view-assignments">
                 <i class="fa-solid fa-file-pen w-5 text-center"></i> Assignments
+            </button>
+            
+            <div class="w-full h-px bg-slate-800/50 my-2"></div>
+            
+            <button onclick="window.location.href='/resume'" class="w-full flex items-center gap-3 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-colors text-left text-sm active:scale-95 shadow-sm">
+                <i class="fa-solid fa-file-invoice w-5 text-center text-emerald-400"></i> Resume Builder
             </button>
         </nav>
 
-        <div class="px-5 pb-8 mt-auto w-full">
-            <button id="btnLogout" class="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-medium w-full transition text-left text-sm">
+        <div class="px-5 pb-8 shrink-0">
+            <button id="btnLogout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-bold w-full text-left text-sm transition-colors">
                 <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8faff] rounded-tl-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.05)] mt-4">
-        <div class="flex-1 overflow-y-auto p-10 pt-12 no-scrollbar"> 
+    <main class="flex-1 flex flex-col h-full bg-[#f8fafc] lg:rounded-tl-[40px] overflow-hidden relative min-w-0 lg:border-l lg:border-t border-slate-200 shadow-[-10px_0_30px_rgba(0,0,0,0.15)]">
+        
+        <header class="h-20 lg:h-24 px-4 sm:px-6 lg:px-10 flex items-center justify-between shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200 z-30 relative shadow-sm">
+            <div class="flex items-center gap-3">
+                <button id="mobileMenuBtn" class="lg:hidden w-11 h-11 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-700 shadow-sm active:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div id="mobileAvatarInitials" class="lg:hidden w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-400 to-indigo-500 text-white flex items-center justify-center text-lg font-black shadow-sm cursor-pointer border border-blue-300" onclick="window.location.href='/profile'">
+                    S
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-slate-600 text-xs font-bold shadow-sm">
+                    <i class="fa-regular fa-calendar mr-2 text-brand"></i> <span id="currentDateDisplay">Date</span>
+                </div>
+            </div>
+        </header>
 
-            <div id="liveSessionBanner" class="hidden bg-gradient-to-r from-brand to-blue-500 text-white p-6 rounded-2xl mb-8 flex justify-between items-center shadow-lg transform transition-all duration-500 scale-95 opacity-0">
-                <div class="flex items-center gap-5">
-                    <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl animate-pulse"><i class="fa-solid fa-satellite-dish"></i></div>
+        <div id="mainScrollArea" class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-24"> 
+
+            <div id="liveSessionBanner" class="hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-5 lg:p-6 rounded-3xl mb-8 flex flex-col sm:flex-row justify-between items-center sm:items-center shadow-lg transform transition-all duration-500 scale-95 opacity-0 gap-4 sm:gap-0">
+                <div class="flex items-center gap-4 lg:gap-5">
+                    <div class="w-12 h-12 lg:w-14 lg:h-14 bg-white/20 rounded-full flex items-center justify-center text-xl lg:text-2xl animate-pulse shrink-0"><i class="fa-solid fa-satellite-dish"></i></div>
                     <div>
-                        <p class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Live Attendance Call</p>
-                        <h2 class="text-2xl font-bold" id="liveSubjectName">Subject Name</h2>
+                        <p class="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-0.5">Live Attendance Call</p>
+                        <h2 class="text-lg lg:text-2xl font-black truncate" id="liveSubjectName">Subject Name</h2>
                     </div>
                 </div>
-                <button id="btnMarkPresent" class="bg-white text-brand px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-transform">Mark Present</button>
+                <button id="btnMarkPresent" class="w-full sm:w-auto bg-white text-blue-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-black shadow-md transition-transform active:scale-95 text-sm uppercase tracking-wider">Mark Present</button>
             </div>
 
             <section id="view-dashboard" class="tab-content active">
-                <div class="flex justify-between items-center mb-8 animate-fade-in-up">
-                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Dashboard Overview</h1>
-                    <p class="text-sm font-bold text-slate-500 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-slate-100" id="currentDateDisplay">Date</p>
-                </div>
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">Dashboard Overview</h1>
 
-                <div class="grid grid-cols-3 gap-8 mb-8">
-                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-100 hover:-translate-y-1 transition-transform">
-                        <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-brand text-3xl"><i class="fa-solid fa-clipboard-check"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Overall Attendance</p><p class="text-4xl font-black text-slate-800" id="statAttPercent">0%</p></div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mb-8">
+                    <div class="btn-jump-attendance cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl shrink-0"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Overall Att.</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statAttPercent">0%</p></div>
                     </div>
-                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
-                        <div class="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 text-3xl"><i class="fa-solid fa-chalkboard-user"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Lectures Attended</p><p class="text-4xl font-black text-slate-800" id="statTotalSessions">0</p></div>
+                    <div id="btnOpenSubjAtt" class="cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 text-xl shrink-0"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Lectures Att.</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statTotalSessions">0</p></div>
                     </div>
-                    <div class="bg-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-300 hover:-translate-y-1 transition-transform">
-                        <div class="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-3xl"><i class="fa-solid fa-file-pen"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Pending Tasks</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
+                    <div class="btn-jump-assignments cursor-pointer bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-xl shrink-0"><i class="fa-solid fa-file-pen"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-0.5 text-[9px] lg:text-[10px] tracking-widest uppercase">Pending Tasks</p><p class="text-2xl lg:text-3xl font-black text-slate-800" id="statAssignments">0</p></div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-8">
-                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[400px] animate-fade-in-up delay-200">
-                        <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">My Subjects</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8 flex flex-col h-[400px]">
+                        <h2 class="font-black text-lg text-slate-800 mb-4 border-b border-slate-100 pb-3">My Subjects</h2>
                         <div id="mySubjectsContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
                     </div>
 
-                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[400px] animate-fade-in-up delay-300">
-                        <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Remarks</h2>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8 flex flex-col h-[400px]">
+                        <h2 class="font-black text-lg text-slate-800 mb-4 border-b border-slate-100 pb-3">General Remarks</h2>
                         <div id="myRemarksContainer" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
                     </div>
                 </div>
             </section>
 
-            <section id="view-attendance" class="tab-content">
-                <div class="flex justify-between items-center mb-8 animate-fade-in-up">
-                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Attendance Analytics</h1>
-                </div>
+            <section id="view-attendance" class="tab-content hidden">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">Attendance Analytics</h1>
 
-                <div class="grid grid-cols-3 gap-8 mb-8">
-                    <div class="col-span-2 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                        <h2 class="font-bold text-lg text-slate-800 mb-6">Attendance Trend</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-8">
+                    <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8">
+                        <h2 class="font-black text-lg text-slate-800 mb-6">Attendance Trend</h2>
                         <div class="h-64 flex items-center justify-center w-full"><canvas id="attendanceLineChart"></canvas></div>
                     </div>
-                    <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 flex flex-col items-center justify-center animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
-                        <h2 class="font-bold text-lg text-slate-800 mb-8 w-full text-left">Current Target</h2>
-                        <div class="relative w-44 h-44">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8 flex flex-col items-center justify-center relative">
+                        <h2 class="font-black text-lg text-slate-800 mb-6 w-full text-left">Current Target</h2>
+                        <div class="relative w-40 h-40 lg:w-44 lg:h-44 group cursor-pointer" title="Click to Edit Target">
                             <canvas id="attendanceChart"></canvas>
-                            <div class="absolute inset-0 flex items-center justify-center flex-col">
-                                <span class="text-4xl font-black text-slate-800" id="graphPercentage">0%</span>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col" id="targetTextContainer">
+                                <span class="text-3xl lg:text-4xl font-black text-slate-800 group-hover:text-brand transition-colors" id="targetText">75%</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-brand transition-colors">Target</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-300">
-                    <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Activity</h2>
-                    <div id="recentActivityContainer" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8">
+                    <h2 class="font-black text-lg text-slate-800 mb-4 border-b border-slate-100 pb-3">Recent Activity</h2>
+                    <div id="recentActivityContainer" class="space-y-3 max-h-[300px] overflow-y-auto pr-2"></div>
                 </div>
             </section>
 
-            <section id="view-assignments" class="tab-content">
-                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Pending Assignments</h1>
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                    <div id="myAssignmentsContainer" class="grid grid-cols-2 gap-6"></div>
+            <section id="view-assignments" class="tab-content hidden">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">My Assignments</h1>
+                <div class="bg-transparent">
+                    <div id="myAssignmentsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6"></div>
                 </div>
             </section>
 
         </div>
     </main>
+</div>
 
-    <div id="submitModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-slate-100 transform transition-all">
-            <h2 class="text-2xl font-black text-slate-800 mb-2">Submit Task</h2>
-            <p class="text-sm font-semibold text-brand mb-6" id="submitTaskTitle">Task Title</p>
-            <textarea id="submitAnswer" rows="4" placeholder="Your Answer / Link..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-6 outline-none focus:ring-2 focus:ring-brand"></textarea>
-            <div class="flex gap-4 justify-end">
-                <button id="btnCloseSubmit" class="px-6 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-medium transition">Cancel</button>
-                <button id="btnConfirmSubmit" class="px-6 py-2.5 bg-brand text-white rounded-xl font-medium shadow-md hover:bg-blue-700 transition">Submit Work</button>
+<div id="submitModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 relative transform transition-all">
+            <h2 class="text-xl font-black text-slate-800 mb-1" id="submitModalMainTitle">Submit Task</h2>
+            <p class="text-[10px] font-bold text-brand mb-6 bg-brand/10 px-3 py-1 rounded-md uppercase tracking-widest inline-block border border-brand/20" id="submitTaskTitle">Task Title</p>
+            
+            <div class="mb-4">
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Your Work (Text/Link)</label>
+                <textarea id="submitAnswer" rows="4" placeholder="Write your answer or paste a link here..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand text-sm font-medium text-slate-700 resize-none"></textarea>
+            </div>
+            <div class="mb-8">
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Attach File (Optional)</label>
+                <input type="file" id="submitFile" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-brand file:text-white hover:file:bg-blue-600 transition cursor-pointer">
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <button id="btnCloseSubmit" class="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-sm font-bold transition-colors">Cancel</button>
+                <button id="btnConfirmSubmit" class="px-5 py-2.5 bg-brand text-white rounded-xl text-sm font-black shadow-md hover:bg-blue-600 transition-colors active:scale-95 flex items-center justify-center min-w-[120px]">Submit</button>
             </div>
         </div>
     </div>
+</div>
 
-</section>
-
-<script type="module">
-    document.addEventListener("DOMContentLoaded", () => {
-        const navbar = document.querySelector(".custom-navbar");
-        if (navbar) {
-            navbar.style.backgroundColor = "#0b132b";
-            navbar.style.borderBottom = "none";
-            navbar.style.boxShadow = "none";
-            navbar.style.padding = "12px 0";
-            navbar.classList.add("navbar-dark-mode");
-            navbar.classList.remove("navbar-light-mode");
-        }
-
-        const aside = document.querySelector("aside");
-        
-        if (window.innerWidth <= 992 && aside) {
-            const closeMenuBtn = document.createElement("button");
-            closeMenuBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-            closeMenuBtn.className = "absolute top-6 right-6 text-white text-3xl font-black bg-white/10 w-12 h-12 rounded-full flex items-center justify-center hover:bg-white/20 z-50";
-            aside.appendChild(closeMenuBtn);
-            
-            closeMenuBtn.addEventListener("click", () => {
-                if(history.state && history.state.menuOpen) {
-                    history.back(); 
-                } else {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                }
-            });
-        }
-
-        if (window.innerWidth <= 992) {
-            const navRight = document.querySelector(".custom-navbar .nav-right");
-            const originalProfile = document.querySelector("#userAvatarInitials");
-            
-            if (navRight && aside && originalProfile) {
-                navRight.style.position = "relative";
-                navRight.style.zIndex = "10000"; 
-                navRight.innerHTML = ""; 
-                navRight.style.display = "flex";
-                navRight.style.alignItems = "center";
-                navRight.style.gap = "15px";
-                
-                const profileClone = originalProfile.cloneNode(true);
-                profileClone.removeAttribute('id'); 
-                profileClone.style.width = "40px"; 
-                profileClone.style.height = "40px";
-                profileClone.style.fontSize = "18px";
-                profileClone.style.marginBottom = "0";
-                profileClone.style.border = "2px solid rgba(255,255,255,0.8)"; 
-                profileClone.style.cursor = "pointer";
-                
-                profileClone.addEventListener("click", () => window.location.href = '/profile');
-                originalProfile.parentElement.addEventListener("click", () => window.location.href = '/profile');
-                navRight.appendChild(profileClone);
-                
-                const burgerBtn = document.createElement("button");
-                burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
-                burgerBtn.style.background = "none";
-                burgerBtn.style.border = "none";
-                navRight.appendChild(burgerBtn);
-                
-                burgerBtn.addEventListener("click", () => {
-                    aside.classList.add("menu-open");
-                    document.body.style.overflow = "hidden";
-                    history.pushState({ menuOpen: true }, ""); 
-                });
-            }
-        }
-
-        // 🔥 BROWSER BACK BUTTON PRO-LOGIC (LOOP KILLER)
-        history.replaceState({ tab: 'view-dashboard' }, ""); 
-
-        window.addEventListener("popstate", (e) => {
-            const aside = document.querySelector("aside");
-            if (aside && aside.classList.contains("menu-open")) {
-                aside.classList.remove("menu-open");
-                document.body.style.overflow = "auto";
-                return;
-            }
-
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab && activeTab.id !== 'view-dashboard') {
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.getElementById('view-dashboard').classList.add('active');
-                history.replaceState({ tab: 'view-dashboard' }, ""); 
-            } else {
-                // 🔥 ULTIMATE FIX: Seedha Home
-                window.location.replace("/"); 
-            }
-        });
-    });
-</script>
+<div id="subjectAttendanceModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-[#f8fafc] rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-5 lg:p-6 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800">Subject Attendance</h2>
+                    <p class="text-[10px] font-bold text-brand uppercase tracking-widest mt-0.5">Lectures Breakdown</p>
+                </div>
+                <button id="btnCloseSubjAtt" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div id="subjectAttendanceList" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-3">
+                <p class="text-center text-slate-400 text-xs italic">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type="module" src="{{ url_for('static', filename='js/student_dashboard.js') }}"></script>
 {% endblock %}

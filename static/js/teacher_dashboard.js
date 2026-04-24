@@ -54,9 +54,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    window.addEventListener("popstate", () => {
+    // 🔥 INITIAL STATE FIX: Pehli baar load hone par state record karega
+    history.replaceState({ tab: 'view-dashboard' }, "");
+
+    // 🔥 SMART ROUTING FOR BACK BUTTON 🔥
+    window.addEventListener("popstate", (e) => {
+        // 1. Reset Scroll
         const scrollArea = document.getElementById('mainScrollArea');
         if (scrollArea) scrollArea.scrollTop = 0;
+
+        // 2. Mobile Menu agar open hai toh pehle usko band karega (Back aane pe)
+        if (sidebar && !sidebar.classList.contains("-translate-x-full")) {
+            toggleMobileMenu();
+            return; // Yahi ruk jayega taaki tab change na ho
+        }
+
+        // 3. Tab State Management
+        if (e.state && e.state.tab) {
+            // Saare tabs hide karo
+            document.querySelectorAll(".tab-content").forEach(v => { 
+                v.classList.remove("active"); v.classList.add("hidden"); 
+            });
+            // Pichla tab show karo
+            const targetView = document.getElementById(e.state.tab);
+            if (targetView) { 
+                targetView.classList.remove("hidden"); targetView.classList.add("active"); 
+            }
+
+            // Buttons ke colors update karo (Teacher wale colors)
+            document.querySelectorAll(".nav-btn").forEach(b => {
+                if(b.getAttribute('data-target') === e.state.tab) {
+                    b.classList.add("bg-gradient-to-r", "from-emerald-500", "to-emerald-600", "text-white", "shadow-md");
+                    b.classList.remove("text-slate-400");
+                } else {
+                    b.classList.remove("bg-gradient-to-r", "from-emerald-500", "to-emerald-600", "text-white", "shadow-md");
+                    b.classList.add("text-slate-400");
+                }
+            });
+        } else {
+            // Agar history khatam, toh home page pe bhej do
+            window.location.replace("/");
+        }
     });
 
     // ================= AUTH & DATA LOAD =================

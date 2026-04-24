@@ -69,9 +69,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    window.addEventListener("popstate", () => {
+    // 🔥 INITIAL STATE FIX: Pehli baar load hone par state record karega
+    history.replaceState({ tab: 'view-overview' }, "");
+
+    // 🔥 SMART ROUTING FOR BACK BUTTON 🔥
+    window.addEventListener("popstate", (e) => {
+        // 1. Reset Scroll
         const scrollArea = document.getElementById('mainScrollArea');
         if (scrollArea) scrollArea.scrollTop = 0;
+
+        // 2. Mobile Menu agar open hai toh pehle usko band karega
+        if (sidebar && !sidebar.classList.contains("-translate-x-full")) {
+            toggleMobileMenu();
+            return;
+        }
+
+        // 3. Tab State Management
+        if (e.state && e.state.tab) {
+            // Saare tabs hide karo
+            document.querySelectorAll(".tab-content").forEach(v => { 
+                v.classList.remove("active"); v.classList.add("hidden"); 
+            });
+            // Pichla tab show karo
+            const targetView = document.getElementById(e.state.tab);
+            if (targetView) { 
+                targetView.classList.remove("hidden"); targetView.classList.add("active"); 
+            }
+
+            // Buttons ke colors update karo (Admin wale colors)
+            document.querySelectorAll(".nav-btn").forEach(b => {
+                if(b.getAttribute('data-target') === e.state.tab) {
+                    b.classList.add("bg-gradient-to-r", "from-indigo-500", "to-purple-600", "text-white", "shadow-md");
+                    b.classList.remove("text-slate-400");
+                } else {
+                    b.classList.remove("bg-gradient-to-r", "from-indigo-500", "to-purple-600", "text-white", "shadow-md");
+                    b.classList.add("text-slate-400");
+                }
+            });
+        } else {
+            // Agar history khatam, toh home page pe bhej do
+            window.location.replace("/");
+        }
     });
 
     // ================= INBOX LOGIC =================
@@ -126,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById("userAvatarInitials")) document.getElementById("userAvatarInitials").innerText = initials;
             if(document.getElementById("mobileAvatarInitials")) document.getElementById("mobileAvatarInitials").innerText = initials;
 
-            loadStats(); loadPendingApprovals(); loadSections(); loadStudents(); loadTeachers(); loadAllocations();
+            loadStats(); loadPendingApprovals(); loadSections(); loadStudents(); loadTeachers(); loadAllocations(); loadAdminRecentSessions();
         } else window.location.replace("/login");
     });
 
@@ -296,6 +334,64 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     <button class="btn-delete-allocation w-8 h-8 rounded-full bg-slate-50 text-slate-400 transition-colors flex items-center justify-center shrink-0" data-id="${docSnap.id}"><i class="fa-solid fa-trash text-xs pointer-events-none"></i></button>
                 </div>`;
+        }
+    }
+
+    // ================= LOAD ALL ACTIVE/RECENT SESSIONS (ADMIN VIEW) =================
+    async function loadAdminRecentSessions() {
+        const container = document.getElementById("adminRecentSessions"); 
+        if(!container) return;
+        
+        container.innerHTML = `<p class="text-xs text-slate-400 font-medium italic"><i class="fa-solid fa-spinner fa-spin mr-1 text-brand"></i> Loading sessions...</p>`;
+
+        try {
+            const snapshot = await getDocs(collection(db, "attendance_sessions"));
+            if(snapshot.empty) { 
+                container.innerHTML = "<p class='text-slate-400 text-xs font-medium italic p-2'>No sessions conducted yet.</p>"; 
+                return; 
+            }
+
+            let sessions = []; 
+            snapshot.forEach(d => { 
+                if(d.data().createdAt) sessions.push({id: d.id, ...d.data(), time: d.data().createdAt.toDate().getTime()}); 
+            });
+            
+            // Sort by newest first
+            sessions.sort((a,b) => b.time - a.time);
+            container.innerHTML = "";
+
+            for (const data of sessions.slice(0, 10)) { // Top 10 recent sessions
+                // Fetch Teacher Name
+                let teacherName = "Unknown Teacher";
+                if(data.teacherId) {
+                    try {
+                        const tDoc = await getDoc(doc(db, "users", data.teacherId));
+                        if(tDoc.exists()) teacherName = tDoc.data().name;
+                    } catch(e){}
+                }
+
+                const dateStr = new Date(data.time).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                
+                // Status Badge (Live or Ended)
+                const statusBadge = data.isActive 
+                    ? `<span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-200 animate-pulse"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i> Live</span>`
+                    : `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-slate-200">Ended</span>`;
+
+                container.innerHTML += `
+                    <div class="p-4 bg-white border border-slate-100 rounded-2xl mb-3 flex justify-between items-center shadow-sm hover:shadow transition-shadow">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <p class="font-black text-sm text-slate-800">${data.subject}</p>
+                                <span class="bg-blue-50 text-blue-600 text-[9px] font-bold px-2 py-0.5 rounded border border-blue-100 uppercase tracking-wider">Sec ${data.sectionId}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-chalkboard-user mr-1 text-slate-400"></i> ${teacherName} &bull; ${dateStr}</p>
+                        </div>
+                        <div class="shrink-0 pl-2">${statusBadge}</div>
+                    </div>`;
+            }
+        } catch(err) {
+            console.error(err);
+            container.innerHTML = "<p class='text-red-400 text-xs font-medium italic'>Failed to load sessions.</p>";
         }
     }
 
