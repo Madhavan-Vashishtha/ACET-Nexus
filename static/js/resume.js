@@ -4,7 +4,6 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // Navbar Fix
     const navbar = document.querySelector(".custom-navbar");
     if (navbar) {
         navbar.style.backgroundColor = "#0b1120";
@@ -14,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let userData = {};
     let semCount = 0;
 
-    // Toast System
     window.showToast = (msg, type='success') => {
         const cont = document.getElementById('toastContainer');
         const toast = document.createElement('div');
@@ -25,7 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
     };
 
-    // Load User Data
     onAuthStateChanged(auth, async (user) => {
         if (!user) return window.location.replace("/login");
 
@@ -45,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Dynamic Semesters WITH DELETE BUTTON
     const semContainer = document.getElementById("semestersContainer");
     document.getElementById("btnAddSem").addEventListener("click", () => {
         if(semCount >= 10) return;
@@ -59,18 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
         semContainer.appendChild(div);
     });
 
-    // Delete Semester Event
     semContainer.addEventListener("click", (e) => {
         if(e.target.closest('.btn-remove-sem')) {
             e.target.closest('.sem-item').remove();
-            // Re-adjust numbers (optional but good practice)
             semCount--;
             const remaining = semContainer.querySelectorAll('.sem-input');
             remaining.forEach((inp, idx) => inp.placeholder = `Sem ${idx + 1}`);
         }
     });
 
-    // Dynamic Experience
     const expContainer = document.getElementById("experienceContainer");
     document.getElementById("btnAddExp").addEventListener("click", () => {
         const div = document.createElement("div");
@@ -108,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if(e.target.closest('.btn-remove-exp')) e.target.closest('.exp-item').remove();
     });
 
-    // Generate Action
     document.getElementById("btnGenerate").addEventListener("click", async () => {
         const btn = document.getElementById("btnGenerate");
         

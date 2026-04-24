@@ -1,39 +1,20 @@
-
-/* SECTION */
-/* .quick-links-section {
-    padding: 80px 60px;
-    background: url("../images/bg3.png") no-repeat center center/cover;
-    text-align: center;
-} */
-
-/* GRID */
-/* .quick-links-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-} */
-
-/* ITEM */
 .quick-item {
     text-align: center;
     cursor: pointer;
     transition: 0.3s;
 }
 
-/* ICON */
 .quick-item img {
     width: 70px;
     margin-bottom: 10px;
 }
 
-/* TEXT */
 .quick-item p {
     font-size: 15px;
     font-weight: 500;
     color: #333;
 }
 
-/* HOVER */
 .quick-item:hover {
     transform: translateY(-5px);
 }
@@ -42,7 +23,6 @@
     transform: scale(1.1);
 }  
 
-/* FEATURES SECTION */
 .feature-section {
     height: 100vh;
     background: url("../images/bg6.png") no-repeat center center/cover;
@@ -51,7 +31,6 @@
     position: relative;
 }
 
-/* OVERLAY */
 .feature-section::before {
     content: "";
     position: absolute;
@@ -59,7 +38,6 @@
     height: 100%;
 }
 
-/* CONTAINER */
 .features-container {
     display: flex;
     width: 100%;
@@ -67,31 +45,25 @@
     z-index: 2;
 }
 
-/* LEFT SIDE */
 .features-left {
     width: 50%;
 }
 
-/* GRID */
 .quick-links-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 30px;
 }
 
-/* RIGHT SIDE */
 .features-right {
     width: 50%;
     display: flex;
     justify-content: flex-end;
 }
 
-/* FLOATING BOX */
 .feature-box {
     width: 80%;
     background: rgb(156, 207, 228);
-    /* mask-image: linear-gradient(to left,black 30%,transparent 100%);
-    -webkit-mask-image: linear-gradient(to left,black 30%,transparent 100%);; */
     padding: 100px 50px;
     border-radius: 10px;
     color: black;
@@ -99,7 +71,6 @@
     -webkit-mask-image: linear-gradient(to bottom,black 30%,transparent 100%);;
 }
 
-/* TEXT */
 .feature-box h1 {
     font-size: 3.8rem;
     font-weight: 700;
@@ -111,6 +82,9 @@
     margin-bottom: 25px;
     font-size: 1.1rem;
 }
+
+
+
 /* ================= MOBILE & TABLET VIEW (FEATURES) ================= */
 @media (max-width: 992px) {
     .feature-section {
@@ -119,7 +93,7 @@
     }
     .features-container {
         flex-direction: column-reverse;
-        padding: 60px 18px 35px; /* ~10% Reduced */
+        padding: 60px 18px 35px;
         align-items: center;
     }
     .features-left, .features-right {
@@ -127,21 +101,21 @@
     }
     .feature-box {
         width: 100%;
-        padding: 27px 18px; /* Reduced */
-        margin-bottom: 35px; /* Reduced */
+        padding: 27px 18px;
+        margin-bottom: 35px;
         text-align: center;
         mask-image: none;
         -webkit-mask-image: none;
     }
     .feature-box h1 {
-        font-size: 2rem; /* Reduced from 2.3rem */
+        font-size: 2rem;
     }
     .feature-box p {
-        font-size: 0.9rem; /* Reduced */
+        font-size: 0.9rem;
     }
     .quick-links-container {
         grid-template-columns: repeat(2, 1fr);
-        gap: 13px; /* Reduced gap */
+        gap: 13px;
     }
-    .quick-item img { width: 45px; } /* Slightly smaller icons */
+    .quick-item img { width: 45px; }
 }

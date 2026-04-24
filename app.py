@@ -9,7 +9,6 @@ from email.message import EmailMessage
 # import google.generativeai as genai
 
 import firebase_admin
-# 🔥 FIX: Added firestore import
 from firebase_admin import credentials, auth as admin_auth, firestore 
 
 load_dotenv()
@@ -24,7 +23,6 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
-# 🔥 FIX: Global db variable
 db = None 
 
 cert_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -32,7 +30,6 @@ if cert_path and not firebase_admin._apps:
     try:
         cred = credentials.Certificate(cert_path)
         firebase_admin.initialize_app(cred)
-        # 🔥 FIX: Initialize Firestore client for backend operations
         db = firestore.client() 
         print("Firebase Admin Initialized Successfully!")
     except Exception as e:
@@ -85,9 +82,9 @@ def profile():
 def scan():
     return render_template('scan.html', show_links=False, show_login=False)
 
-# ==========================================
-# 🔍 CHECK USERNAME API
-# ==========================================
+
+#-----------CHECK USERNAME API
+
 @app.route('/check-username', methods=['POST'])
 def check_username():
     try:
@@ -97,7 +94,7 @@ def check_username():
         if not username or not db:
             return jsonify({'exists': False})
             
-        # Check if username exists in Firestore
+        # Check if username exists in Firestore db
         users_ref = db.collection('users')
         query = users_ref.where('username', '==', username).limit(1).stream()
         
@@ -109,9 +106,10 @@ def check_username():
         print(f"Username check error: {e}")
         return jsonify({'exists': False}), 500
 
-# ==========================================
-# 🔐 OTP BACKEND LOGIC
-# ==========================================
+
+
+#-----------OTP BACKEND LOGIC
+
 @app.route('/send-otp', methods=['POST'])
 def send_otp():
     data = request.json
@@ -153,9 +151,11 @@ def verify_otp():
     else:
         return jsonify({'success': False, 'message': 'Invalid OTP or Email mismatch.'}), 400
     
-# ==========================================
-# 🗑️ ADMIN API: DELETE USER COMPLETELY
-# ==========================================
+
+
+
+#----------ADMIN API: DELETE USER
+
 @app.route('/delete-user', methods=['POST'])
 def delete_user():
     data = request.json
@@ -165,7 +165,7 @@ def delete_user():
         return jsonify({'success': False, 'message': 'UID is required'}), 400
 
     try:
-        # Ye admin_auth us JSON file ka use karke Firebase se user ko hamesha ke liye udayega
+        # admin use this to delete user
         admin_auth.delete_user(uid)
         return jsonify({'success': True, 'message': 'User deleted from Authentication.'})
     except Exception as e:

@@ -69,34 +69,29 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 🔥 INITIAL STATE FIX: Pehli baar load hone par state record karega
     history.replaceState({ tab: 'view-overview' }, "");
 
-    // 🔥 SMART ROUTING FOR BACK BUTTON 🔥
     window.addEventListener("popstate", (e) => {
-        // 1. Reset Scroll
+        
         const scrollArea = document.getElementById('mainScrollArea');
         if (scrollArea) scrollArea.scrollTop = 0;
 
-        // 2. Mobile Menu agar open hai toh pehle usko band karega
         if (sidebar && !sidebar.classList.contains("-translate-x-full")) {
             toggleMobileMenu();
             return;
         }
 
-        // 3. Tab State Management
         if (e.state && e.state.tab) {
-            // Saare tabs hide karo
+           
             document.querySelectorAll(".tab-content").forEach(v => { 
                 v.classList.remove("active"); v.classList.add("hidden"); 
             });
-            // Pichla tab show karo
+           
             const targetView = document.getElementById(e.state.tab);
             if (targetView) { 
                 targetView.classList.remove("hidden"); targetView.classList.add("active"); 
             }
 
-            // Buttons ke colors update karo (Admin wale colors)
             document.querySelectorAll(".nav-btn").forEach(b => {
                 if(b.getAttribute('data-target') === e.state.tab) {
                     b.classList.add("bg-gradient-to-r", "from-indigo-500", "to-purple-600", "text-white", "shadow-md");
@@ -107,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         } else {
-            // Agar history khatam, toh home page pe bhej do
             window.location.replace("/");
         }
     });
@@ -356,11 +350,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(d.data().createdAt) sessions.push({id: d.id, ...d.data(), time: d.data().createdAt.toDate().getTime()}); 
             });
             
-            // Sort by newest first
             sessions.sort((a,b) => b.time - a.time);
             container.innerHTML = "";
 
-            for (const data of sessions.slice(0, 10)) { // Top 10 recent sessions
+            for (const data of sessions.slice(0, 10)) { 
                 // Fetch Teacher Name
                 let teacherName = "Unknown Teacher";
                 if(data.teacherId) {
@@ -372,7 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const dateStr = new Date(data.time).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
                 
-                // Status Badge (Live or Ended)
                 const statusBadge = data.isActive 
                     ? `<span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-200 animate-pulse"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i> Live</span>`
                     : `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-slate-200">Ended</span>`;

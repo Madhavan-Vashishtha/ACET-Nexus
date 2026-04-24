@@ -11,11 +11,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentStudentSection = null;
     let activeSessionId = null;
     let currentAssignmentIdToSubmit = null;
-    let currentResubmitId = null; // 🔥 Tracks if we are updating an existing submission
+    let currentResubmitId = null;
     let attendanceChartInstance = null;
     let attendanceLineChartInstance = null;
-    let subjectStatsGlobal = {}; // For the new Subject Modal
-
+    let subjectStatsGlobal = {};
     const urlParams = new URLSearchParams(window.location.search);
     const viewAsId = urlParams.get('viewAs');
     let isViewOnly = false;
@@ -65,7 +64,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    history.replaceState({ tab: 'view-dashboard' }, ""); 
+    const requestedTab = urlParams.get('tab');
+    if (requestedTab) {
+        const tabBtn = document.querySelector(`.nav-btn[data-target="view-${requestedTab}"]`);
+        if (tabBtn) {
+            setTimeout(() => tabBtn.click(), 50);
+        } else {
+            history.replaceState({ tab: 'view-dashboard' }, "");
+        }
+    } else {
+        history.replaceState({ tab: 'view-dashboard' }, "");
+    }
     window.addEventListener("popstate", (e) => {
         const scrollArea = document.getElementById('mainScrollArea');
         if (scrollArea) scrollArea.scrollTop = 0;
@@ -372,7 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.closest('.btn-jump-attendance')) { e.preventDefault(); document.querySelector('[data-target="view-attendance"]')?.click(); }
         if (e.target.closest('.btn-jump-assignments')) { e.preventDefault(); document.querySelector('[data-target="view-assignments"]')?.click(); }
 
-        // 🔥 OPEN SUBJECT ATTENDANCE MODAL 🔥
         if (e.target.closest('#btnOpenSubjAtt')) {
             e.preventDefault();
             const modal = document.getElementById("subjectAttendanceModal");
@@ -415,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (err) { btn.disabled = false; btn.innerHTML = `Retry`; }
         }
 
-        // 🔥 OPEN SUBMIT/RESUBMIT MODAL 🔥
+        // OPEN SUBMIT/RESUBMIT MODAL
         if (!isViewOnly && (e.target.closest('.btn-submit-task') || e.target.closest('.btn-resubmit-task'))) {
             e.preventDefault();
             const btn = e.target.closest('.btn-submit-task') || e.target.closest('.btn-resubmit-task');
@@ -441,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentResubmitId = null; // Reset
         }
 
-        // 🔥 CONFIRM SUBMIT / RESUBMIT TO FIRESTORE 🔥
+        // CONFIRM SUBMIT / RESUBMIT TO FIRESTORE
         if (!isViewOnly && e.target.closest('#btnConfirmSubmit')) {
             e.preventDefault();
             const ansEl = document.getElementById("submitAnswer"); const ans = ansEl ? ansEl.value.trim() : "";

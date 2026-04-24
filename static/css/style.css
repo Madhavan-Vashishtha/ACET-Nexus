@@ -1,4 +1,3 @@
-/* RESET */
 html {
     scroll-behavior: smooth;
     scroll-snap-type: y mandatory;
@@ -15,7 +14,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* NAVBAR */
 .navbar {
     padding-top: 15px;
 }
@@ -53,7 +51,6 @@ body {
 .nav-link.active { font-weight: 600; }
 .nav-link.active::after { width: 100%; }
 
-/* LOGO */
 .logo {
     display: flex;
     align-items: center;
@@ -79,7 +76,6 @@ body {
 .custom-navbar.navbar-dark-mode .logo-text { color: white; }
 .custom-navbar.navbar-light-mode .logo-text { color: black; }
 
-/* NAV LINKS */
 .nav-links {
     gap: 50px;
     cursor: pointer;
@@ -124,7 +120,6 @@ body {
     transform: translateY(-50%);
 }
 
-/* LOGIN BUTTON */
 .login-btn {
     padding: 10px 24px;
     border-radius: 6px;
@@ -140,17 +135,11 @@ body {
 .custom-navbar.navbar-light-mode .login-btn:hover { background: green; color: black; }
 
 
-/* ========================================================= */
-/* ============= PRO DASHBOARD ADDITIONS =================== */
-/* ========================================================= */
-
-/* Clean Scrollbars (Applied globally so dashboards look neat) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Admin Tab Switching Animation */
 .tab-content { display: none; }
 .tab-content.active { 
     display: block; 
@@ -162,24 +151,17 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Glassmorphism effects for Modals */
 .modal-backdrop {
     backdrop-filter: blur(8px);
     background-color: rgba(15, 23, 42, 0.6);
 }
 
-/* ========================================================= */
-/* ============= PREMIUM UI / UX ADDITIONS ================= */
-/* ========================================================= */
-
-/* Subtle Dot Pattern Background */
 .bg-dot-pattern {
     background-color: #f8fafc;
     background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
     background-size: 24px 24px;
 }
 
-/* Glassmorphism / Frosted Glass Effect */
 .glass-panel {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
@@ -187,7 +169,6 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-/* Premium Card Hover Animation */
 .card-hover {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -197,29 +178,21 @@ body {
     border-color: rgba(37, 99, 235, 0.3);
 }
 
-/* Gradient Text */
 .text-gradient {
     background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-/* ========================================================= */
-/* ============= PRO DASHBOARD PREMIUM ADDITIONS ============= */
-/* ========================================================= */
-
-/* Clean Scrollbars */
-/* ================= GLOBAL INVISIBLE SCROLLBAR ================= */
 ::-webkit-scrollbar { 
-    display: none; /* Chrome, Safari, Edge ke liye hide */
+    display: none;
 }
 
 html, body, * {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox ke liye hide */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-/* Admin Tab Switching Animation */
 .tab-content { display: none; }
 .tab-content.active { 
     display: block; 
@@ -231,7 +204,6 @@ html, body, * {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Premium Card Hover Animation */
 .card-hover {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -240,14 +212,16 @@ html, body, * {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
 }
 
-/* Glassmorphism effects for Modals */
 .modal-backdrop {
     backdrop-filter: blur(8px);
     background-color: rgba(15, 23, 42, 0.6);
 }
+
+
+
+
 /* ================= MOBILE & TABLET VIEW (GLOBAL & NAVBAR) ================= */
 @media (max-width: 992px) {
-    /* Snap Scroll Wapas Laya */
     html {
         scroll-snap-type: y mandatory;
     }
@@ -257,7 +231,6 @@ html, body, * {
         padding-top: 90px;
     }
     
-    /* Navbar Layout Fix */
     .custom-navbar .container-fluid {
         display: flex !important;
         justify-content: space-between;
@@ -268,12 +241,11 @@ html, body, * {
     .nav-left { flex: 1; }
     .logo-text { font-size: 22px; }
     
-    /* Login & Hamburger Fix */
     .nav-right {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 15px; /* Thoda gap badhaya button aur menu ke beech */
+        gap: 15px;
     }
     
     .login-btn {
@@ -285,27 +257,24 @@ html, body, * {
         display: block !important;
     }
 
-    /* 🔥 PREMIUM MOBILE MENU DROPDOWN 🔥 */
     .nav-center {
         display: none;
         position: absolute;
-        top: 80px; /* Navbar ke theek neeche */
-        right: 20px; /* Right side margin */
-        left: auto; /* Full width hataya */
-        width: 220px; /* Fixed neat width */
-        background: rgba(15, 23, 42, 0.92); /* Dark glass */
+        top: 80px;
+        right: 20px;
+        left: auto;
+        width: 220px;
+        background: rgba(15, 23, 42, 0.92);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         padding: 25px;
-        text-align: left; /* Left align kiya professional look ke liye */
-        border-radius: 16px; /* Round Edges */
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); /* 3D Floating Shadow */
-        border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle premium border */
-        animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy open effect */
+        text-align: left;
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    
-    
     .nav-center.active { 
         display: block; 
     }
@@ -313,29 +282,25 @@ html, body, * {
     .nav-links { 
         flex-direction: column; 
         gap: 22px; 
-        padding-left: 15px; /* 🔥 Red dot ke liye exact space banayi */
-        align-items: flex-start; /* Text left align */
+        padding-left: 15px;
+        align-items: flex-start;
     }
 
-    /* Mobile par underline properly text ke neeche aaye uske liye inline-block */
     .navbar .nav-link {
         display: inline-block;
         width: fit-content;
     }
 
-    /* 🔥 FIX 1: Dropdown ke andar text humesha white rahega (चाहे कोई भी section हो) */
     .custom-navbar.navbar-light-mode .nav-center .nav-link,
     .custom-navbar.navbar-dark-mode .nav-center .nav-link {
         color: #ffffff !important;
     }
 
-    /* 🔥 FIX 2: Hover aur Active par underline bhi white hi rahegi */
     .custom-navbar.navbar-light-mode .nav-center .nav-link::after,
     .custom-navbar.navbar-dark-mode .nav-center .nav-link::after {
         background-color: #ffffff !important;
     }
 
-    /* 🔥 FIX 3: Red Dot ko wapas zinda karna aur align karna */
     .nav-center .nav-link.active::before {
         content: "";
         width: 6px;
@@ -343,14 +308,13 @@ html, body, * {
         background: red !important;
         border-radius: 50%;
         position: absolute;
-        left: -14px; /* Thoda aur left kiya taaki text se na chipke */
+        left: -14px;
         top: 50%;
         transform: translateY(-50%);
         display: block !important;
     }
 }
 
-/* Dropdown Animation Keyframes */
 @keyframes popDown {
     0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
     100% { opacity: 1; transform: translateY(0) scale(1); }

@@ -18,10 +18,8 @@ import {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-// 🔥 PRO FIX: Agar user already logged in hai, toh sirf LOGIN page se bhagao!
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Sirf tabhi Home bhejo jab URL mein 'login' ho
         if (window.location.pathname.includes("login")) {
             window.location.replace("/"); 
         }
@@ -270,7 +268,7 @@ if (googleBtn) {
   });
 }
 
-// 🔥 FORGOT PASSWORD LOGIC 🔥
+// FORGOT PASSWORD LOGIC
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 if (forgotPasswordBtn) {
     forgotPasswordBtn.addEventListener("click", async (e) => {
@@ -287,7 +285,6 @@ if (forgotPasswordBtn) {
     });
 }
 
-// 🔥 PRO FIX: REPLACE() used to clear history so Back button doesn't open Login again
 function redirectUser(role) {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get('redirect');

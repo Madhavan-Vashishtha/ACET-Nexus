@@ -54,10 +54,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 🔥 INITIAL STATE FIX: Pehli baar load hone par state record karega
-    history.replaceState({ tab: 'view-dashboard' }, "");
+    const requestedTab = urlParams.get('tab');
+    if (requestedTab) {
+        // Agar URL mein tab hai (jaise ?tab=assignments), toh us button ko dhoondh ke auto-click karega
+        const tabBtn = document.querySelector(`.nav-btn[data-target="view-${requestedTab}"]`);
+        if (tabBtn) {
+            setTimeout(() => tabBtn.click(), 50); // 50ms delay taaki UI smooth load ho
+        } else {
+            history.replaceState({ tab: 'view-dashboard' }, "");
+        }
+    } else {
+        // Normal direct load
+        history.replaceState({ tab: 'view-dashboard' }, "");
+    }
 
-    // 🔥 SMART ROUTING FOR BACK BUTTON 🔥
+    // SMART ROUTING FOR BACK BUTTON 
     window.addEventListener("popstate", (e) => {
         // 1. Reset Scroll
         const scrollArea = document.getElementById('mainScrollArea');

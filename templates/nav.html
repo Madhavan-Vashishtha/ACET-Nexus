@@ -35,7 +35,7 @@
 </nav>
 
 <script>
-    // 🔥 Hamburger kholne ka logic
+    // menu open logic
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const mobileMenu = document.getElementById('mobileMenu');
     if(hamburgerBtn) {
@@ -44,7 +44,7 @@
         });
     }
 
-    // 🔥 Kisi bhi link par click karne se menu automatically band hoga
+    // menu auto close
     document.querySelectorAll('.mobile-close-link').forEach(link => {
         link.addEventListener('click', () => {
             if(mobileMenu.classList.contains('active')) {

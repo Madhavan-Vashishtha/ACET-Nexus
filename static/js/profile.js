@@ -8,7 +8,6 @@ const storage = getStorage();
 document.addEventListener("DOMContentLoaded", () => {
     let currentUserRole = null;
 
-    // 🔥 NAVBAR DARK MODE FIX (FOR LIGHT PAGES)
     const navbar = document.querySelector(".custom-navbar");
     if (navbar) {
         navbar.style.backgroundColor = "#0b1120"; // Dark BG
@@ -45,11 +44,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("inpFullName").value = data.name || "";
         document.getElementById("inpEmail").value = data.email || "";
         
-        // Original Fields Restored
         document.getElementById("inpPhone").value = data.phone || "";
         document.getElementById("inpAddress").value = data.address || "";
 
-        // Avatar Handling
         const avatarBox = document.getElementById("profileImageDisplay");
         if (data.photoURL) {
             avatarBox.innerHTML = `<img src="${data.photoURL}" class="w-full h-full object-cover">`;
@@ -57,7 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
             avatarBox.innerText = data.name ? data.name[0].toUpperCase() : "U";
         }
 
-        // Role-based visibility
         const sFields = document.getElementById("studentFields");
         const tFields = document.getElementById("teacherFields");
         const aFields = document.getElementById("adminFields");
@@ -75,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // FILE UPLOAD FOR PROFILE PIC
     document.getElementById("profilePicInput").addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -100,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // SAVE PROFILE DATA
     document.getElementById("btnSaveProfile").addEventListener("click", async () => {
         const btn = document.getElementById("btnSaveProfile");
         const newName = document.getElementById("inpFullName").value.trim();
@@ -135,16 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 🔥 FIX: 2-TAP PASSWORD RESET (NO CONFIRM POPUPS) 🔥
     document.getElementById("btnResetPassword").addEventListener("click", async (e) => {
         const btn = e.currentTarget;
         const email = auth.currentUser.email;
 
-        // Step 1: Warning/Confirmation state
         if(btn.getAttribute('data-confirm') !== 'true') {
             btn.setAttribute('data-confirm', 'true');
             
-            // Store original styling
             const originalHTML = btn.innerHTML;
             btn.setAttribute('data-original', originalHTML);
             
@@ -152,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.replace('text-slate-600', 'text-amber-500');
             btn.classList.replace('border-slate-200', 'border-amber-200');
             
-            // Revert back after 3 seconds if not clicked
             setTimeout(() => {
                 if(btn.getAttribute('data-confirm') === 'true') {
                     btn.removeAttribute('data-confirm');
@@ -164,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Step 2: Actual Execution on second tap
         btn.removeAttribute('data-confirm');
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending link...`;
         btn.disabled = true;
@@ -182,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // SMART ROUTING (BACK BUTTON)
     document.getElementById("btnBackToDash").addEventListener("click", () => {
         if (!currentUserRole) return window.location.href = "/";
         const routes = {

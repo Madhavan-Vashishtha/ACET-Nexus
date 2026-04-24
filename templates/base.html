@@ -16,11 +16,11 @@
     {% include "nav.html" %}
     {% block content %}{% endblock %}
 
-<!-- 🔥 Firebase Scripts -->
+<!-- Firebase Scripts -->
 <script type="module" src="{{ url_for('static', filename='js/firebase.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/auth.js') }}"></script>
 
-<!-- 🔥 UI SCRIPT ONLY -->
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -63,11 +63,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Trigger scroll event once on load to set initial state
         window.dispatchEvent(new Event("scroll"));
     }
 
-    // ================= PANEL SWITCH =================
+    // ================= PANEL SWITCH LOGIN =================
     const signUpButton = document.getElementById('signUpBtn');
     const signInButton = document.getElementById('signInBtn');
     const container = document.getElementById('container');
@@ -107,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ================= STEP SWITCH =================
+    // ================= STEP SWITCH TO USERNAME =================
     const signupNext = document.getElementById("signupNext");
     const usernameStep = document.getElementById("usernameStep");
 
