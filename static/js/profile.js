@@ -1,178 +1,187 @@
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const storage = getStorage();
 
 document.addEventListener("DOMContentLoaded", () => {
-    
-    let currentUserId = null;
     let currentUserRole = null;
 
-    // Elements
-    const profName = document.getElementById("profName");
-    const profEmail = document.getElementById("profEmail");
-    const profPhone = document.getElementById("profPhone");
-    const profDob = document.getElementById("profDob");
-    const profSection = document.getElementById("profSection"); 
-    const profAddress = document.getElementById("profAddress");
-    const profBio = document.getElementById("profBio");
-    const profPicUrl = document.getElementById("profPicUrl");
-    
-    const profileAvatar = document.getElementById("profileAvatar");
-    const roleBadge = document.getElementById("roleBadge");
-    const idLabel = document.getElementById("idLabel");
-    const profEnrollment = document.getElementById("profEnrollment");
-    const profDepartment = document.getElementById("profDepartment");
-    const profJoined = document.getElementById("profJoined");
-    
-    const profileBar = document.getElementById("profileBar");
-    const profilePercent = document.getElementById("profilePercent");
-    
-    const btnSaveProfile = document.getElementById("btnSaveProfile");
-    const btnBackToDashboard = document.getElementById("btnBackToDashboard");
+    // Toast Notification System
+    window.showToast = (msg, type='success') => {
+        const cont = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+        toast.className = `${bg} text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 text-sm font-bold flex items-center gap-3 transform translate-y-10 opacity-0`;
+        toast.innerHTML = `<i class="fa-solid ${type==='success'?'fa-circle-check':'fa-circle-exclamation'}"></i> ${msg}`;
+        cont.appendChild(toast);
+        setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+        setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+    };
 
-    const completionFields = [profName, profEmail, profPhone, profDob, profSection, profAddress, profBio, profPicUrl];
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return window.location.replace("/login");
 
-    function updateCompletion() {
-        const total = completionFields.length;
-        let filled = 0;
-        completionFields.forEach(field => {
-            if (field.value && field.value.trim() !== "") filled++;
-        });
-        const percent = Math.round((filled / total) * 100);
-        profileBar.style.width = percent + "%";
-        profilePercent.textContent = percent + "%";
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            currentUserRole = data.role;
+            setupUI(data);
+        }
+    });
+
+    function setupUI(data) {
+        document.getElementById("userNameDisplay").innerText = data.name || "User";
+        document.getElementById("userRoleBadge").innerText = data.role;
+        document.getElementById("inpFullName").value = data.name || "";
+        document.getElementById("inpEmail").value = data.email || "";
         
-        if (percent === 100) {
-            profileBar.className = "bg-gradient-to-r from-emerald-400 to-emerald-600 h-2.5 rounded-full transition-all duration-500 shadow-sm";
-            profilePercent.className = "font-black text-emerald-600";
+        // Original Fields Restored
+        document.getElementById("inpPhone").value = data.phone || "";
+        document.getElementById("inpAddress").value = data.address || "";
+
+        // Avatar Handling
+        const avatarBox = document.getElementById("profileImageDisplay");
+        if (data.photoURL) {
+            avatarBox.innerHTML = `<img src="${data.photoURL}" class="w-full h-full object-cover">`;
         } else {
-            profileBar.className = "bg-gradient-to-r from-brand to-indigo-400 h-2.5 rounded-full transition-all duration-500 shadow-sm";
-            profilePercent.className = "font-black text-brand";
+            avatarBox.innerText = data.name ? data.name[0].toUpperCase() : "U";
+        }
+
+        // Role-based visibility
+        const sFields = document.getElementById("studentFields");
+        const tFields = document.getElementById("teacherFields");
+        const aFields = document.getElementById("adminFields");
+
+        if (currentUserRole === "student") {
+            sFields.classList.remove("hidden");
+            document.getElementById("inpEnrollment").value = data.enrollment || "";
+            document.getElementById("inpRollNo").value = data.rollNo || "";
+            document.getElementById("inpRegNo").value = data.regNo || "";
+        } else if (currentUserRole === "teacher") {
+            tFields.classList.remove("hidden");
+            document.getElementById("inpDept").value = data.department || "";
+        } else if (currentUserRole === "admin") {
+            aFields.classList.remove("hidden");
         }
     }
 
-    completionFields.forEach(field => {
-        field.addEventListener("input", updateCompletion);
-    });
+    // FILE UPLOAD FOR PROFILE PIC
+    document.getElementById("profilePicInput").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUserId = user.uid;
-            
-            try {
-                const secSnap = await getDocs(collection(db, "sections"));
-                profSection.innerHTML = '<option value="" disabled selected>-- Select Section --</option>';
-                secSnap.forEach(s => {
-                    const sName = s.data().name; 
-                    profSection.innerHTML += `<option value="${sName}">${sName}</option>`;
-                });
-
-                const userDoc = await getDoc(doc(db, "users", currentUserId));
-                
-                if(userDoc.exists()) {
-                    const data = userDoc.data();
-                    currentUserRole = data.role || 'student';
-
-                    profName.value = data.name || "No Name Set";
-                    profEmail.value = data.email || user.email;
-                    if(data.phone) profPhone.value = data.phone;
-                    if(data.dob) profDob.value = data.dob;
-                    if(data.section) profSection.value = data.section; 
-                    if(data.address) profAddress.value = data.address;
-                    if(data.bio) profBio.value = data.bio;
-                    
-                    if(data.profilePic) {
-                        profPicUrl.value = data.profilePic;
-                        profileAvatar.src = data.profilePic;
-                    } else {
-                        profileAvatar.src = `https://ui-avatars.com/api/?name=${data.name || 'User'}&background=eff6ff&color=4f46e5`;
-                    }
-
-                    roleBadge.innerText = currentUserRole;
-                    profJoined.innerText = data.joinedDate || new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-
-                    if (currentUserRole === 'admin') {
-                        roleBadge.className = "bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-purple-200";
-                        idLabel.innerText = "Admin ID";
-                        profEnrollment.innerText = data.adminId || "ADM-001";
-                        profDepartment.innerText = "Management";
-                    } 
-                    else if (currentUserRole === 'teacher') {
-                        roleBadge.className = "bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-orange-200";
-                        idLabel.innerText = "Employee ID";
-                        profEnrollment.innerText = data.empId || "EMP-" + Math.floor(1000 + Math.random() * 9000);
-                        profDepartment.innerText = data.department || "Computer Science";
-                    } 
-                    else {
-                        roleBadge.className = "bg-indigo-100 text-brand px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-200";
-                        idLabel.innerText = "Enrollment No";
-                        profEnrollment.innerText = data.enrollment || "STU-" + Math.floor(10000 + Math.random() * 90000);
-                        profDepartment.innerText = data.section ? `Sec: ${data.section}` : "Please Update Section";
-                    }
-
-                    updateCompletion();
-                }
-            } catch (error) {
-                console.error("Error fetching profile: ", error);
-            }
-        } else {
-            // 🔥 STRICT LOOP KILLER
-            window.location.replace("/login");
-        }
-    });
-
-    profPicUrl.addEventListener("input", (e) => {
-        const newUrl = e.target.value.trim();
-        if(newUrl) {
-            profileAvatar.src = newUrl;
-        } else {
-            profileAvatar.src = `https://ui-avatars.com/api/?name=${profName.value}&background=eff6ff&color=4f46e5`;
-        }
-    });
-
-    btnSaveProfile.addEventListener("click", async () => {
-        const originalText = btnSaveProfile.innerHTML;
-        btnSaveProfile.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
-        btnSaveProfile.disabled = true;
+        const btn = document.getElementById("btnSaveProfile");
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
 
         try {
-            const userRef = doc(db, "users", currentUserId);
+            const picRef = ref(storage, `profiles/${auth.currentUser.uid}_${Date.now()}`);
+            await uploadBytes(picRef, file);
+            const url = await getDownloadURL(picRef);
             
-            await updateDoc(userRef, {
-                phone: profPhone.value.trim(),
-                dob: profDob.value,
-                section: profSection.value.trim().toUpperCase(),
-                address: profAddress.value.trim(),
-                bio: profBio.value.trim(),
-                profilePic: profPicUrl.value.trim()
-            });
-
-            btnSaveProfile.className = "bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_4px_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-sm md:text-base w-full md:w-auto";
-            btnSaveProfile.innerHTML = `<i class="fa-solid fa-check"></i> Saved Successfully`;
-            
-            if(currentUserRole === 'student') {
-                profDepartment.innerText = `Sec: ${profSection.value.trim().toUpperCase()}`;
-            }
-            
-            setTimeout(() => {
-                btnSaveProfile.className = "bg-brand text-white px-8 py-3 rounded-xl font-bold shadow-[0_4px_15px_rgba(79,70,229,0.4)] hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm md:text-base w-full md:w-auto";
-                btnSaveProfile.innerHTML = originalText;
-                btnSaveProfile.disabled = false;
-            }, 2000);
-
-        } catch (error) {
-            console.error(error);
-            alert("Error updating profile. Please try again.");
-            btnSaveProfile.innerHTML = originalText;
-            btnSaveProfile.disabled = false;
-        } 
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { photoURL: url });
+            document.getElementById("profileImageDisplay").innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+            window.showToast("Profile photo updated!");
+        } catch (err) {
+            window.showToast("Failed to upload photo", "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Profile`;
+        }
     });
 
-    // 🔥 SMART ROUTING (LOOP KILLER)
-    btnBackToDashboard.addEventListener("click", () => {
-        if (!currentUserRole) return window.location.replace("/");
-        if (currentUserRole === 'admin') window.location.replace("/admin-dashboard");
-        else if (currentUserRole === 'teacher') window.location.replace("/teacher-dashboard");
-        else window.location.replace("/student-dashboard");
+    // SAVE PROFILE DATA
+    document.getElementById("btnSaveProfile").addEventListener("click", async () => {
+        const btn = document.getElementById("btnSaveProfile");
+        const newName = document.getElementById("inpFullName").value.trim();
+        if (!newName) return window.showToast("Name is required", "error");
+
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+
+        const updatePayload = { 
+            name: newName,
+            phone: document.getElementById("inpPhone").value.trim(),
+            address: document.getElementById("inpAddress").value.trim()
+        };
+
+        if (currentUserRole === "student") {
+            updatePayload.enrollment = document.getElementById("inpEnrollment").value.trim();
+            updatePayload.rollNo = document.getElementById("inpRollNo").value.trim();
+            updatePayload.regNo = document.getElementById("inpRegNo").value.trim();
+        } else if (currentUserRole === "teacher") {
+            updatePayload.department = document.getElementById("inpDept").value.trim();
+        }
+
+        try {
+            await updateDoc(doc(db, "users", auth.currentUser.uid), updatePayload);
+            document.getElementById("userNameDisplay").innerText = newName;
+            window.showToast("Profile saved successfully!");
+        } catch (err) {
+            window.showToast("Save failed", "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Profile`;
+        }
+    });
+
+    // 🔥 FIX: 2-TAP PASSWORD RESET (NO CONFIRM POPUPS) 🔥
+    document.getElementById("btnResetPassword").addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        const email = auth.currentUser.email;
+
+        // Step 1: Warning/Confirmation state
+        if(btn.getAttribute('data-confirm') !== 'true') {
+            btn.setAttribute('data-confirm', 'true');
+            
+            // Store original styling
+            const originalHTML = btn.innerHTML;
+            btn.setAttribute('data-original', originalHTML);
+            
+            btn.innerHTML = `<i class="fa-solid fa-question"></i> Click again to confirm reset`;
+            btn.classList.replace('text-slate-600', 'text-amber-500');
+            btn.classList.replace('border-slate-200', 'border-amber-200');
+            
+            // Revert back after 3 seconds if not clicked
+            setTimeout(() => {
+                if(btn.getAttribute('data-confirm') === 'true') {
+                    btn.removeAttribute('data-confirm');
+                    btn.innerHTML = btn.getAttribute('data-original');
+                    btn.classList.replace('text-amber-500', 'text-slate-600');
+                    btn.classList.replace('border-amber-200', 'border-slate-200');
+                }
+            }, 3000);
+            return;
+        }
+
+        // Step 2: Actual Execution on second tap
+        btn.removeAttribute('data-confirm');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending link...`;
+        btn.disabled = true;
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            window.showToast("Reset link sent! Check your inbox.");
+        } catch (err) {
+            window.showToast("Failed to send reset link", "error");
+        } finally {
+            btn.innerHTML = btn.getAttribute('data-original');
+            btn.classList.replace('text-amber-500', 'text-slate-600');
+            btn.classList.replace('border-amber-200', 'border-slate-200');
+            btn.disabled = false;
+        }
+    });
+
+    // SMART ROUTING (BACK BUTTON)
+    document.getElementById("btnBackToDash").addEventListener("click", () => {
+        if (!currentUserRole) return window.location.href = "/";
+        const routes = {
+            admin: "/admin-dashboard",
+            teacher: "/teacher-dashboard",
+            student: "/student-dashboard"
+        };
+        window.location.href = routes[currentUserRole] || "/";
     });
 });
