@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const targetId = btn.getAttribute("data-target");
+            
             document.querySelectorAll(".nav-btn").forEach(b => {
                 b.classList.remove("bg-gradient-to-r", "from-emerald-500", "to-emerald-600", "text-white", "shadow-md");
                 b.classList.add("text-slate-400");
@@ -35,12 +36,15 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.remove("text-slate-400");
             
             document.querySelectorAll(".tab-content").forEach(v => { 
-                v.classList.add("hidden"); v.classList.remove("block"); 
+                v.classList.remove("active"); v.classList.add("hidden"); 
             });
             const targetView = document.getElementById(targetId);
             if (targetView) { 
-                targetView.classList.remove("hidden"); targetView.classList.add("block"); 
+                targetView.classList.remove("hidden"); targetView.classList.add("active"); 
             }
+            
+            const scrollArea = document.getElementById('mainScrollArea');
+            if (scrollArea) scrollArea.scrollTop = 0;
             
             if (window.innerWidth <= 1024 && !sidebar.classList.contains("-translate-x-full")) {
                 toggleMobileMenu();
@@ -48,6 +52,11 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (targetId !== "view-dashboard") history.pushState({ tab: targetId }, ""); else history.replaceState({ tab: targetId }, "");
         });
+    });
+
+    window.addEventListener("popstate", () => {
+        const scrollArea = document.getElementById('mainScrollArea');
+        if (scrollArea) scrollArea.scrollTop = 0;
     });
 
     // ================= AUTH & DATA LOAD =================
@@ -93,13 +102,13 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if(container) {
                 container.innerHTML += `
-                    <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition-all btn-jump-students" data-sec="${secStr}">
+                    <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition-all btn-jump-students" data-sec="${secStr}">
                         <div class="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
-                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chalkboard"></i></div>
+                            <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg lg:text-xl"><i class="fa-solid fa-chalkboard"></i></div>
                             <span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-lg border border-emerald-100 text-[10px] uppercase tracking-widest">Sec ${secStr}</span>
                         </div>
-                        <h3 class="font-black text-slate-800 text-lg mb-1 truncate">${data.subjectName}</h3>
-                        <p class="text-[11px] text-slate-400 font-bold"><i class="fa-solid fa-users mr-1 text-slate-300"></i> ${totalStudents} Enrolled</p>
+                        <h3 class="font-black text-slate-800 text-base lg:text-lg mb-1 truncate">${data.subjectName}</h3>
+                        <p class="text-[10px] lg:text-[11px] text-slate-400 font-bold"><i class="fa-solid fa-users mr-1 text-slate-300"></i> ${totalStudents} Enrolled</p>
                     </div>`;
             }
             
@@ -128,12 +137,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             container.innerHTML += `
                 <div class="session-log-item cursor-pointer p-4 bg-white border border-slate-100 hover:border-blue-200 rounded-xl flex items-center shadow-sm hover:shadow transition-all mb-3" data-session="${data.id}" data-sec="${data.sectionId}" data-subj="${data.subject}" data-time="${data.time}">
-                    <div class="w-1/2 sm:w-1/3">
-                        <p class="font-black text-slate-800 text-sm truncate">${data.subject} <span class="bg-slate-100 text-slate-500 font-bold text-[9px] px-2 py-0.5 rounded ml-1 border border-slate-200">SEC ${data.sectionId}</span></p>
-                        <p class="text-[10px] text-slate-400 font-bold mt-1"><i class="fa-solid fa-clock mr-1"></i> ${dateStr}</p>
+                    <div class="w-[50%] sm:w-[40%]">
+                        <p class="font-black text-slate-800 text-[11px] sm:text-sm truncate">${data.subject} <span class="bg-slate-100 text-slate-500 font-bold text-[8px] sm:text-[9px] px-2 py-0.5 rounded ml-1 border border-slate-200">SEC ${data.sectionId}</span></p>
+                        <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1"><i class="fa-solid fa-clock mr-1"></i> ${dateStr}</p>
                     </div>
-                    <div class="w-1/3 px-4 hidden sm:block"><div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="${pCol} h-1.5 rounded-full" style="width: ${pct}%"></div></div></div>
-                    <div class="w-1/2 sm:w-1/3 text-right"><p class="text-xl font-black text-slate-800">${pct}%</p><p class="text-[9px] uppercase font-bold text-slate-400 mt-0.5">Present: ${attCount}/${totalSt}</p></div>
+                    <div class="hidden sm:block sm:w-[30%] px-4"><div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="${pCol} h-1.5 rounded-full" style="width: ${pct}%"></div></div></div>
+                    <div class="w-[50%] sm:w-[30%] text-right"><p class="text-lg sm:text-xl font-black text-slate-800">${pct}%</p><p class="text-[8px] sm:text-[9px] uppercase font-bold text-slate-400 mt-0.5">Present: ${attCount}/${totalSt}</p></div>
                 </div>`;
         }
     }
@@ -146,8 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
         studentContainer.innerHTML = `<tr><td colspan="4" class="p-8 text-slate-500 text-sm font-medium text-center"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Fetching students...</td></tr>`;
 
         if (filterContainer) {
-            filterContainer.innerHTML = `<button class="filter-btn bg-slate-800 text-white px-5 py-2 rounded-full text-xs font-bold transition-colors shadow-sm" data-filter="all">All Sections</button>`;
-            myAllocatedClasses.forEach(sec => filterContainer.innerHTML += `<button class="filter-btn bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 px-5 py-2 rounded-full text-xs font-bold transition-colors" data-filter="${sec}">Sec ${sec}</button>`);
+            filterContainer.innerHTML = `<button class="filter-btn bg-slate-800 text-white px-4 lg:px-5 py-2 rounded-full text-[10px] lg:text-xs font-bold transition-colors shadow-sm" data-filter="all">All Sections</button>`;
+            myAllocatedClasses.forEach(sec => filterContainer.innerHTML += `<button class="filter-btn bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 px-4 lg:px-5 py-2 rounded-full text-[10px] lg:text-xs font-bold transition-colors" data-filter="${sec}">Sec ${sec}</button>`);
         }
 
         const q = query(collection(db, "users"), where("role", "==", "student"));
@@ -177,25 +186,24 @@ document.addEventListener("DOMContentLoaded", () => {
             let col = s.pct >= 75 ? "text-emerald-600 bg-emerald-50 border-emerald-100" : (s.pct >= 50 ? "text-orange-600 bg-orange-50 border-orange-100" : "text-red-600 bg-red-50 border-red-100");
             html += `
                 <tr class="student-row hover:bg-slate-50/50 transition-colors" data-sec="${s.section?.toUpperCase()}">
-                    <td class="px-6 py-4">
+                    <td class="px-4 lg:px-6 py-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div>
-                            <div><p class="font-bold text-sm text-slate-800">${s.name}</p><p class="text-[10px] text-slate-400 font-medium">${s.email}</p></div>
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user"></i></div>
+                            <div><p class="font-bold text-[11px] lg:text-sm text-slate-800">${s.name}</p><p class="text-[9px] lg:text-[10px] text-slate-400 font-medium">${s.email}</p></div>
                         </div>
                     </td>
-                    <td class="px-6 py-4"><span class="px-2 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">${s.section||'N/A'}</span></td>
-                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-md text-xs font-black border ${col}">${s.pct}%</span></td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2">
-                            <button class="bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 px-3 py-1.5 rounded-lg text-[10px] font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${s.id}', '_blank')"><i class="fa-solid fa-eye mr-1"></i> View</button>
-                            <button class="btn-quick-remark bg-white hover:bg-purple-50 text-purple-600 border border-slate-200 hover:border-purple-200 px-3 py-1.5 rounded-lg text-[10px] font-bold transition shadow-sm" data-sid="${s.id}" data-sname="${s.name}"><i class="fa-solid fa-comment-dots mr-1"></i> Remark</button>
+                    <td class="px-4 lg:px-6 py-4"><span class="px-2 py-1 rounded-md text-[9px] lg:text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">${s.section||'N/A'}</span></td>
+                    <td class="px-4 lg:px-6 py-4"><span class="px-2 lg:px-3 py-1 rounded-md text-[10px] lg:text-xs font-black border ${col}">${s.pct}%</span></td>
+                    <td class="px-4 lg:px-6 py-4 text-right">
+                        <div class="flex justify-end gap-1.5 lg:gap-2">
+                            <button class="bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition shadow-sm" onclick="window.open('/student-dashboard?viewAs=${s.id}', '_blank')"><i class="fa-solid fa-eye lg:mr-1"></i> <span class="hidden lg:inline">View</span></button>
+                            <button class="btn-quick-remark bg-white hover:bg-purple-50 text-purple-600 border border-slate-200 hover:border-purple-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition shadow-sm" data-sid="${s.id}" data-sname="${s.name}"><i class="fa-solid fa-comment-dots lg:mr-1"></i> <span class="hidden lg:inline">Remark</span></button>
                         </div>
                     </td>
                 </tr>`;
         });
         studentContainer.innerHTML = html;
 
-        // Filters Event
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => { b.classList.remove('bg-slate-800','text-white','shadow-sm'); b.classList.add('bg-white','text-slate-600'); });
@@ -215,11 +223,18 @@ document.addEventListener("DOMContentLoaded", () => {
         
         snap.forEach(d => {
             const dt = d.data(); const formattedDate = new Date(dt.dueDate).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-            cont.innerHTML += `<div class="p-5 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all mb-4 flex justify-between items-center"><div class="flex-1 overflow-hidden pr-2"><p class="font-black text-base text-slate-800 mb-1 truncate">${dt.title}</p><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"><span class="text-brand mr-2">${dt.sectionId}</span> Due: <span class="text-red-400">${formattedDate}</span></p></div><button class="btn-view-subs bg-slate-50 text-brand border border-slate-200 hover:bg-brand hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm shrink-0" data-id="${d.id}" data-title="${dt.title}" data-sec="${dt.sectionId}">View</button></div>`;
+            cont.innerHTML += `
+                <div class="p-4 lg:p-5 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all mb-3 lg:mb-4 flex justify-between items-center">
+                    <div class="flex-1 overflow-hidden pr-2">
+                        <p class="font-black text-sm lg:text-base text-slate-800 mb-1 truncate">${dt.title}</p>
+                        <p class="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest"><span class="text-brand mr-2">${dt.sectionId}</span> Due: <span class="text-red-400">${formattedDate}</span></p>
+                    </div>
+                    <button class="btn-view-subs bg-slate-50 text-brand border border-slate-200 hover:bg-brand hover:text-white px-3 lg:px-4 py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm shrink-0" data-id="${d.id}" data-title="${dt.title}" data-sec="${dt.sectionId}">View</button>
+                </div>`;
         });
     }
 
-    // ================= EVENT DELEGATION FOR ALL MODALS =================
+    // ================= EVENT DELEGATION =================
     document.addEventListener("click", async (e) => {
         
         if (e.target.closest('.btn-jump-classes')) {
@@ -253,9 +268,9 @@ document.addEventListener("DOMContentLoaded", () => {
             stSnap.forEach(d => {
                 const st = {id: d.id, ...d.data()};
                 if(pMap.has(st.id)){
-                    pC++; pHTML += `<div class="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center mb-2 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-check text-xs"></i></div><p class="text-sm font-bold text-slate-800">${st.name}</p></div>${!isViewOnly ? `<button class="btn-override-absent text-[10px] font-black text-red-500 bg-red-50 hover:bg-red-500 hover:text-white border border-red-100 px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider" data-mark="${pMap.get(st.id)}" data-sess="${sid}">Mark Absent</button>` : ''}</div>`;
+                    pC++; pHTML += `<div class="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center mb-2 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-check text-xs"></i></div><p class="text-xs sm:text-sm font-bold text-slate-800">${st.name}</p></div>${!isViewOnly ? `<button class="btn-override-absent text-[9px] sm:text-[10px] font-black text-red-500 bg-red-50 hover:bg-red-500 hover:text-white border border-red-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider shrink-0" data-mark="${pMap.get(st.id)}" data-sess="${sid}">Mark Absent</button>` : ''}</div>`;
                 } else {
-                    aC++; aHTML += `<div class="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center mb-2 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center"><i class="fa-solid fa-xmark text-xs"></i></div><p class="text-sm font-bold text-slate-800">${st.name}</p></div>${!isViewOnly ? `<button class="btn-override-present text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white border border-emerald-100 px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider" data-st="${st.id}" data-sess="${sid}" data-sec="${sec}">Mark Present</button>` : ''}</div>`;
+                    aC++; aHTML += `<div class="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center mb-2 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-xmark text-xs"></i></div><p class="text-xs sm:text-sm font-bold text-slate-800">${st.name}</p></div>${!isViewOnly ? `<button class="btn-override-present text-[9px] sm:text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white border border-emerald-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider shrink-0" data-st="${st.id}" data-sess="${sid}" data-sec="${sec}">Mark Present</button>` : ''}</div>`;
                 }
             });
             document.getElementById("presentCount").innerText = pC; document.getElementById("absentCount").innerText = aC;
@@ -274,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelector(`.session-log-item[data-session="${b.getAttribute("data-sess")}"]`)?.click();
         }
 
-        // --- SUBMISSIONS ACCORDION ---
+        // 🔥 FIX: SUBMISSIONS ACCORDION (CLICK TO EXPAND) + MOBILE RESPONSIVENESS 🔥
         if (e.target.closest('.btn-view-subs')) {
             e.preventDefault(); const btn = e.target.closest('.btn-view-subs');
             document.getElementById("subModalTitle").innerText = btn.getAttribute("data-title");
@@ -290,32 +305,79 @@ document.addEventListener("DOMContentLoaded", () => {
                 const st = {id: d.id, ...d.data()};
                 if(sMap.has(st.id)){
                     const sub = sMap.get(st.id); const stat = sub.status || 'pending';
-                    html += `<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"><div class="p-4 bg-slate-50 flex justify-between items-center cursor-pointer btn-toggle-sub" data-target="acc-${sub.id}"><p class="text-sm font-bold text-slate-800"><i class="fa-solid fa-file-check text-blue-500 mr-2"></i> ${st.name}</p> <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border ${stat==='approved'?'bg-emerald-50 text-emerald-600 border-emerald-200':(stat==='rejected'?'bg-red-50 text-red-600 border-red-200':'bg-amber-50 text-amber-600 border-amber-200')}">${stat}</span></div><div id="acc-${sub.id}" class="hidden p-5 border-t border-slate-100 bg-white"><p class="text-xs font-medium text-slate-600 bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">${sub.answer||'No text'}</p>${sub.fileUrl?`<a href="${sub.fileUrl}" target="_blank" class="text-[10px] uppercase font-bold tracking-wider bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-100 inline-block mb-4"><i class="fa-solid fa-download mr-1"></i> Download</a>`:''}${stat==='pending'&&!isViewOnly?`<div class="flex gap-2"><input type="text" id="rmk-${sub.id}" class="flex-1 text-xs border border-slate-200 p-3 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-brand" placeholder="Add remark..."><button class="btn-approve-sub bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md" data-id="${sub.id}">Approve</button><button class="btn-reject-sub bg-red-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md" data-id="${sub.id}">Reject</button></div>`:''}</div></div>`;
+                    let badge = stat === 'approved' ? `<span class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded uppercase font-bold border border-emerald-200">Approved</span>` : 
+                                stat === 'rejected' ? `<span class="text-[9px] bg-red-100 text-red-700 px-2 py-0.5 rounded uppercase font-bold border border-red-200">Rejected</span>` : 
+                                `<span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded uppercase font-bold border border-amber-200">Pending</span>`;
+                    
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all">
+                            <div class="p-4 bg-slate-50 flex justify-between items-center cursor-pointer btn-toggle-sub hover:bg-slate-100 transition-colors" data-target="acc-${sub.id}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-file-check"></i></div>
+                                    <p class="text-sm font-bold text-slate-800 truncate">${st.name}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${badge}
+                                    <i class="fa-solid fa-chevron-down text-slate-400 text-xs ml-1 transition-transform"></i>
+                                </div>
+                            </div>
+                            <div id="acc-${sub.id}" class="hidden p-4 border-t border-slate-100 bg-white">
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 mb-3 text-xs text-slate-600 break-all">
+                                    ${sub.answer||'<i class="text-slate-400">No text attached.</i>'}
+                                </div>
+                                ${sub.fileUrl?`<a href="${sub.fileUrl}" target="_blank" class="text-[10px] uppercase font-bold tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-lg border border-blue-100 inline-flex items-center mb-3 transition-colors w-fit"><i class="fa-solid fa-download mr-2"></i> Download Link</a>`:''}
+                                ${stat==='pending'&&!isViewOnly?`
+                                    <div class="flex flex-col sm:flex-row gap-2 mt-1 w-full">
+                                        <input type="text" id="rmk-${sub.id}" class="w-full sm:flex-1 text-xs border border-slate-200 p-3 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-brand" placeholder="Add remark (required for rejection)...">
+                                        <div class="flex gap-2 w-full sm:w-auto">
+                                            <button class="btn-approve-sub flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md transition-colors" data-id="${sub.id}">Approve</button>
+                                            <button class="btn-reject-sub flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md transition-colors" data-id="${sub.id}">Reject</button>
+                                        </div>
+                                    </div>`:''
+                                }
+                            </div>
+                        </div>`;
                 } else {
-                    html += `<div class="p-4 bg-white border border-slate-100 rounded-xl flex justify-between items-center shadow-sm opacity-60"><p class="text-sm font-bold text-slate-500"><i class="fa-solid fa-user mr-2 text-slate-300"></i> ${st.name}</p><span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200">Pending</span></div>`;
+                    html += `
+                        <div class="p-4 bg-white border border-slate-100 rounded-xl flex justify-between items-center shadow-sm opacity-60">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user"></i></div>
+                                <p class="text-sm font-bold text-slate-500 truncate">${st.name}</p>
+                            </div>
+                            <span class="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200">Not Submitted</span>
+                        </div>`;
                 }
             });
             list.innerHTML = html + `</div>`;
         }
         if (e.target.closest('#btnCloseSubmissions')) { e.preventDefault(); document.getElementById("submissionsModal").classList.add("hidden"); }
-        if (e.target.closest('.btn-toggle-sub')) { e.preventDefault(); document.getElementById(e.target.closest('.btn-toggle-sub').getAttribute('data-target')).classList.toggle('hidden'); }
+        if (e.target.closest('.btn-toggle-sub')) { 
+            e.preventDefault(); 
+            const targetId = e.target.closest('.btn-toggle-sub').getAttribute('data-target');
+            const targetDiv = document.getElementById(targetId);
+            const icon = e.target.closest('.btn-toggle-sub').querySelector('.fa-chevron-down');
+            if(targetDiv) {
+                targetDiv.classList.toggle('hidden');
+                if(icon) icon.style.transform = targetDiv.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
         
-        if (e.target.closest('.btn-approve-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-approve-sub'); const sid = b.getAttribute("data-id"); b.innerHTML="Wait"; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"approved",teacherRemark:document.getElementById(`rmk-${sid}`)?.value||"Good",reviewedAt:serverTimestamp()}); b.closest('.flex').innerHTML=`<span class="text-emerald-500 font-bold text-xs"><i class="fa-solid fa-check mr-1"></i> Approved</span>`;}
-        if (e.target.closest('.btn-reject-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-reject-sub'); const sid = b.getAttribute("data-id"); const r = document.getElementById(`rmk-${sid}`)?.value; if(!r) return alert("Add remark"); b.innerHTML="Wait"; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"rejected",teacherRemark:r,reviewedAt:serverTimestamp()}); b.closest('.flex').innerHTML=`<span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;}
+        if (e.target.closest('.btn-approve-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-approve-sub'); const sid = b.getAttribute("data-id"); b.innerHTML="Wait..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"approved",teacherRemark:document.getElementById(`rmk-${sid}`)?.value||"Good job!",reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 w-full"><i class="fa-solid fa-check mr-1"></i> Approved</span>`;}
+        if (e.target.closest('.btn-reject-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-reject-sub'); const sid = b.getAttribute("data-id"); const r = document.getElementById(`rmk-${sid}`)?.value; if(!r) { alert("Please add a remark to reject."); b.innerHTML="Reject"; b.disabled=false; return; } b.innerHTML="Wait..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"rejected",teacherRemark:r,reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-red-600 font-bold bg-red-50 px-3 py-2 rounded-lg border border-red-100 w-full"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;}
 
-        // --- GLOBAL REMARK ---
-        if (e.target.closest(".btn-quick-remark") && !isViewOnly) { e.preventDefault(); const b = e.target.closest(".btn-quick-remark"); document.getElementById("remarkSelClass").innerHTML = `<option value="">Direct</option>`; document.getElementById("remarkSelStudent").innerHTML = `<option value="${b.getAttribute("data-sid")}">${b.getAttribute("data-sname")}</option>`; document.getElementById("globalRemarkModal").classList.remove("hidden"); }
+        // GLOBAL REMARK
+        if (e.target.closest(".btn-quick-remark") && !isViewOnly) { e.preventDefault(); const b = e.target.closest(".btn-quick-remark"); document.getElementById("remarkSelClass").innerHTML = `<option value="">Direct Selection</option>`; document.getElementById("remarkSelStudent").innerHTML = `<option value="${b.getAttribute("data-sid")}">${b.getAttribute("data-sname")}</option>`; document.getElementById("globalRemarkModal").classList.remove("hidden"); }
         if (e.target.closest("#btnOpenGlobalRemark") && !isViewOnly) { e.preventDefault(); document.getElementById("remarkSelStudent").innerHTML = '<option value="">Select Class First</option>'; document.getElementById("globalRemarkModal").classList.remove("hidden"); }
         if (e.target.closest("#btnCloseGlobalRemark")) { e.preventDefault(); document.getElementById("globalRemarkModal").classList.add("hidden"); }
         if (e.target.closest("#btnSubmitGlobalRemark") && !isViewOnly) { e.preventDefault(); const b = e.target.closest("#btnSubmitGlobalRemark"); const sid = document.getElementById("remarkSelStudent")?.value; const txt = document.getElementById("remarkText")?.value; if(!sid||!txt) return; b.innerHTML="Wait..."; b.disabled=true; await addDoc(collection(db,"remarks"),{studentId:sid,teacherId:currentTeacherId,remark:txt,type:"general",timestamp:serverTimestamp()}); document.getElementById("globalRemarkModal").classList.add("hidden"); document.getElementById("remarkText").value=""; b.innerHTML="Send Message"; b.disabled=false; }
         
-        // --- QR ---
+        // QR SESSION
         if (e.target.closest("#btnOpenSessionModal") && !isViewOnly) { e.preventDefault(); document.getElementById("sessionModal").classList.remove("hidden"); }
         if (e.target.closest("#btnCloseSessionModal")) { e.preventDefault(); document.getElementById("sessionModal").classList.add("hidden"); }
         if (e.target.closest("#btnStartSession") && !isViewOnly) { e.preventDefault(); const val = document.getElementById("selMyClass").value; if(!val)return; const b=document.getElementById("btnStartSession"); b.innerHTML="Wait..."; b.disabled=true; const [sec, subj] = val.split("|"); const t = Math.random().toString(36).substring(2,10); const r = await addDoc(collection(db,"attendance_sessions"),{teacherId:currentTeacherId,sectionId:sec,subject:subj,createdAt:new Date(),expiresAt:new Date(Date.now()+300000),isActive:true,currentToken:t}); activeSessionId = r.id; document.getElementById("sessionModal").classList.add("hidden"); document.getElementById("qrDisplayModal").classList.remove("hidden"); document.getElementById("qrClassDisplay").innerText = subj; startSessionLogic(t); b.innerHTML="Start Live"; b.disabled=false; }
         if (e.target.closest("#btnCloseQr")) { e.preventDefault(); endSession(); }
         
-        // --- POST ASSIGN ---
+        // CREATE ASSIGNMENT
         if (e.target.closest("#btnOpenAssign") && !isViewOnly) { e.preventDefault(); document.getElementById("assignModal").classList.remove("hidden"); }
         if (e.target.closest("#btnCloseAssign")) { e.preventDefault(); document.getElementById("assignModal").classList.add("hidden"); }
         if (e.target.closest("#btnSaveAssign") && !isViewOnly) { e.preventDefault(); const val = document.getElementById("assignSelClass").value; const t = document.getElementById("assignTitle").value; const d = document.getElementById("assignDue").value; if(!val||!t||!d)return; await addDoc(collection(db,"assignments"),{teacherId:currentTeacherId,sectionId:val.split("|")[0],subjectName:val.split("|")[1],title:t,dueDate:d,postedAt:new Date()}); document.getElementById("assignModal").classList.add("hidden"); loadMyPostedAssignments(); }
