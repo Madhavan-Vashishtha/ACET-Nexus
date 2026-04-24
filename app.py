@@ -6,7 +6,7 @@ import requests
 import smtplib
 import random
 from email.message import EmailMessage
-import google.generativeai as genai
+# import google.generativeai as genai
 
 import firebase_admin
 # 🔥 FIX: Added firestore import
@@ -14,12 +14,12 @@ from firebase_admin import credentials, auth as admin_auth, firestore
 
 load_dotenv()
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-else:
-    print("WARNING: GEMINI_API_KEY not found in .env file!")
+# if GEMINI_API_KEY:
+#     genai.configure(api_key=GEMINI_API_KEY)
+# else:
+#     print("WARNING: GEMINI_API_KEY not found in .env file!")
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -176,51 +176,51 @@ def delete_user():
 def resume_builder():
     return render_template('resume.html')
 
-@app.route('/api/generate-resume', methods=['POST'])
-def generate_resume_api():
-    try:
-        data = request.json
+# @app.route('/api/generate-resume', methods=['POST'])
+# def generate_resume_api():
+#     try:
+#         data = request.json
         
-        prompt = f"""
-        You are an expert resume writer. Create a highly professional, visually appealing, and ATS-friendly resume in PURE HTML format based on the user data provided below.
+#         prompt = f"""
+#         You are an expert resume writer. Create a highly professional, visually appealing, and ATS-friendly resume in PURE HTML format based on the user data provided below.
         
-        Rules:
-        1. Use inline CSS or standard Tailwind CSS classes. 
-        2. The design should be clean, minimalist, and fit perfectly on an A4 page when printed.
-        3. Do NOT wrap the response in markdown blocks like ```html. Return ONLY the raw HTML code.
-        4. Organize the sections logically: Header (Name, Contact Info), Professional Summary, Education (College, 12th, 10th), and Experience.
-        5. Enhance the experience descriptions to sound professional and impactful.
+#         Rules:
+#         1. Use inline CSS or standard Tailwind CSS classes. 
+#         2. The design should be clean, minimalist, and fit perfectly on an A4 page when printed.
+#         3. Do NOT wrap the response in markdown blocks like ```html. Return ONLY the raw HTML code.
+#         4. Organize the sections logically: Header (Name, Contact Info), Professional Summary, Education (College, 12th, 10th), and Experience.
+#         5. Enhance the experience descriptions to sound professional and impactful.
 
-        User Data:
-        Name: {data.get('name')}
-        Email: {data.get('email')}
-        Phone: {data.get('phone')}
-        Address: {data.get('address')}
+#         User Data:
+#         Name: {data.get('name')}
+#         Email: {data.get('email')}
+#         Phone: {data.get('phone')}
+#         Address: {data.get('address')}
         
-        Professional Summary/Objective: {data.get('objective')}
+#         Professional Summary/Objective: {data.get('objective')}
         
-        Education:
-        - College: {data.get('collegeName')}, Degree: {data.get('degree')}
-        - Semesters CGPA: {', '.join(data.get('semesters', []))}
-        - 12th Grade: {data.get('school12')} (Percentage: {data.get('perc12')}%)
-        - 10th Grade: {data.get('school10')} (Percentage: {data.get('perc10')}%)
+#         Education:
+#         - College: {data.get('collegeName')}, Degree: {data.get('degree')}
+#         - Semesters CGPA: {', '.join(data.get('semesters', []))}
+#         - 12th Grade: {data.get('school12')} (Percentage: {data.get('perc12')}%)
+#         - 10th Grade: {data.get('school10')} (Percentage: {data.get('perc10')}%)
         
-        Experience:
-        {data.get('experiences')}
-        """
+#         Experience:
+#         {data.get('experiences')}
+#         """
         
-        # Using Gemini 1.5 Flash or Pro
-        model = genai.GenerativeModel('gemini-1.5-flash') 
-        response = model.generate_content(prompt)
+#         # Using Gemini 1.5 Flash or Pro
+#         model = genai.GenerativeModel('gemini-1.5-flash') 
+#         response = model.generate_content(prompt)
         
-        # Clean up in case Gemini still adds markdown formatting
-        html_content = response.text.replace("```html", "").replace("```", "").strip()
+#         # Clean up in case Gemini still adds markdown formatting
+#         html_content = response.text.replace("```html", "").replace("```", "").strip()
         
-        return jsonify({"success": True, "resume_html": html_content})
+#         return jsonify({"success": True, "resume_html": html_content})
 
-    except Exception as e:
-        print("Resume Gen Error:", e)
-        return jsonify({"success": False, "error": str(e)}), 500
+#     except Exception as e:
+#         print("Resume Gen Error:", e)
+#         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
