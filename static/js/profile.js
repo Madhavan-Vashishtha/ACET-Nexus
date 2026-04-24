@@ -8,6 +8,14 @@ const storage = getStorage();
 document.addEventListener("DOMContentLoaded", () => {
     let currentUserRole = null;
 
+    // 🔥 NAVBAR DARK MODE FIX (FOR LIGHT PAGES)
+    const navbar = document.querySelector(".custom-navbar");
+    if (navbar) {
+        navbar.style.backgroundColor = "#0b1120"; // Dark BG
+        navbar.classList.add("navbar-dark-mode");
+        navbar.classList.remove("navbar-light-mode");
+    }
+
     // Toast Notification System
     window.showToast = (msg, type='success') => {
         const cont = document.getElementById('toastContainer');
