@@ -1,293 +1,287 @@
 {% extends "base.html" %}
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+    
+    @media (max-width: 1024px) {
+        aside { position: fixed; transform: translateX(-100%); z-index: 50; transition: transform 0.3s ease-in-out; }
+        aside.menu-open { transform: translateX(0); }
+        .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; backdrop-filter: blur(2px); }
+        .mobile-overlay.menu-open { display: block; }
+    }
+</style>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script>
-    tailwind.config = {
-        theme: { extend: { fontFamily: { sans: ['Segoe UI', 'Inter', 'sans-serif'] }, colors: { brand: '#10b981', darkBg: '#0b132b', darkHover: '#1c2541' } } }
-    }
+    tailwind.config = { theme: { extend: { colors: { brand: '#10b981', darkBg: '#0b1120' } } } }
 </script>
 
-<section class="pt-[70px] h-screen w-full flex bg-darkBg overflow-hidden">
+<div class="h-screen w-full flex bg-[#0b1120] overflow-hidden pt-[70px]">
 
-    <aside class="w-64 bg-darkBg text-slate-400 flex flex-col z-20 shrink-0 relative h-full">
-        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer group" onclick="window.location.href='/profile'">
-            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-black shadow-[0_4px_20px_rgba(16,185,129,0.4)] mb-3 border-2 border-slate-800 transition-transform hover:scale-105 duration-300">
-                T
-            </div>
+    <div id="mobileOverlay" class="mobile-overlay lg:hidden"></div>
+
+    <aside id="mainSidebar" class="w-64 bg-[#0b1120] text-slate-400 flex flex-col shrink-0 h-full border-r border-slate-800 shadow-2xl lg:shadow-none">
+        <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center mt-2 cursor-pointer transition-transform hover:scale-105" onclick="window.location.href='/profile'">
+            <div id="userAvatarInitials" class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-500 text-white flex items-center justify-center text-2xl font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] mb-3">T</div>
             <span id="welcomeText" class="hidden"></span>
-            <p class="text-[10px] font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full tracking-widest uppercase">Professor</p>
+            <p class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full tracking-widest uppercase border border-emerald-400/20">Professor</p>
         </div>
 
-        <nav class="w-full px-4 py-4 flex flex-col gap-1.5 shrink-0">
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 bg-brand text-white rounded-xl font-medium shadow-[0_4px_15px_rgba(16,185,129,0.4)] transition text-left text-sm" data-target="view-dashboard">
+        <nav class="w-full px-4 py-6 flex flex-col gap-2 flex-1 overflow-y-auto">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold shadow-md transition-all text-left text-sm" data-target="view-dashboard">
                 <i class="fa-solid fa-desktop w-5 text-center"></i> Dashboard
             </button>
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-classes">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl font-bold transition-all text-left text-sm" data-target="view-classes">
                 <i class="fa-solid fa-chalkboard-user w-5 text-center"></i> My Classes
             </button>
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-students">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl font-bold transition-all text-left text-sm" data-target="view-students">
                 <i class="fa-solid fa-users w-5 text-center"></i> My Students
             </button>
-            <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-darkHover rounded-xl font-medium transition text-left text-sm" data-target="view-assignments">
+            <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl font-bold transition-all text-left text-sm" data-target="view-assignments">
                 <i class="fa-solid fa-file-signature w-5 text-center"></i> Assignments
             </button>
         </nav>
 
-        <div class="px-5 pb-8 mt-auto w-full">
-            <button id="btnLogout" class="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-medium w-full transition text-left text-sm">
+        <div class="px-5 pb-8 shrink-0">
+            <button id="btnLogout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl font-bold w-full transition-all text-left text-sm">
                 <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8faff] rounded-tl-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.05)] mt-4">
+    <main class="flex-1 flex flex-col h-full bg-[#f8fafc] lg:rounded-tl-[40px] overflow-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.15)] relative min-w-0 lg:border-l lg:border-t border-slate-200">
         
-        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-white/50 flex items-center justify-between px-10 shrink-0 z-10">
+        <header class="h-20 lg:h-24 px-6 lg:px-10 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200">
             <div>
-                <p class="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-lg" id="currentDateDisplay">Date</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <button id="btnOpenAssign" class="bg-slate-800 text-white px-6 py-2.5 rounded-xl hover:bg-slate-900 font-bold shadow-md transition flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> New Task
+                <button id="mobileMenuBtn" class="lg:hidden w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 shadow-sm">
+                    <i class="fa-solid fa-bars"></i>
                 </button>
-                <button id="btnOpenSessionModal" class="bg-gradient-to-r from-brand to-emerald-600 text-white px-6 py-2.5 rounded-xl hover:from-emerald-600 hover:to-emerald-700 font-bold shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] transition transform hover:-translate-y-0.5 flex items-center gap-2">
-                    <i class="fa-solid fa-stopwatch"></i> Start Live Attendance
+            </div>
+            <div class="flex items-center gap-3 lg:gap-4">
+                <div class="hidden sm:flex items-center bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm text-slate-500 text-xs font-bold">
+                    <i class="fa-regular fa-calendar mr-2"></i> <span id="currentDateDisplay">Date</span>
+                </div>
+                <button id="btnOpenAssign" class="bg-slate-800 text-white px-4 lg:px-5 py-2 lg:py-2.5 rounded-xl hover:bg-slate-900 font-bold shadow-md transition-all flex items-center gap-2 text-xs">
+                    <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">New Task</span>
+                </button>
+                <button id="btnOpenSessionModal" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 lg:px-5 py-2 lg:py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 text-xs">
+                    <i class="fa-solid fa-stopwatch animate-pulse"></i> <span class="hidden sm:inline">Live Attendance</span>
                 </button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-10 pt-12 no-scrollbar"> 
+        <div class="flex-1 overflow-y-auto px-6 lg:px-10 py-8"> 
             
-            <section id="view-dashboard" class="tab-content active">
-                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Dashboard Overview</h1>
+            <section id="view-dashboard" class="tab-content block">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6 lg:mb-8">Dashboard Overview</h1>
                 
-                <div class="grid grid-cols-2 gap-8 mb-8">
-                    <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-100 hover:-translate-y-1 transition-transform">
-                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-brand text-3xl"><i class="fa-solid fa-layer-group"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">My Allocated Sections</p><p class="text-4xl font-black text-slate-800" id="statClasses">0</p></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                    <div onclick="document.querySelector('[data-target=\'view-classes\']').click()" class="cursor-pointer bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl"><i class="fa-solid fa-layer-group"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-0.5 text-[10px] tracking-widest uppercase">My Sections</p><p class="text-4xl font-black text-slate-800" id="statClasses">0</p></div>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center gap-6 animate-fade-in-up delay-200 hover:-translate-y-1 transition-transform">
-                        <div class="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 text-3xl"><i class="fa-solid fa-file-signature"></i></div>
-                        <div><p class="text-slate-400 font-bold mb-1 text-[10px] tracking-widest uppercase">Total Posted Tasks</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
+                    <div onclick="document.querySelector('[data-target=\'view-assignments\']').click()" class="cursor-pointer bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-2xl"><i class="fa-solid fa-file-signature"></i></div>
+                        <div><p class="text-slate-400 font-bold mb-0.5 text-[10px] tracking-widest uppercase">Posted Tasks</p><p class="text-4xl font-black text-slate-800" id="statAssignments">0</p></div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-300 min-h-[300px] flex flex-col">
-                    <h2 class="font-bold text-lg text-slate-800 mb-6 border-b border-slate-50 pb-3">Recent Class Sessions & Attendance %</h2>
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 lg:p-8 min-h-[300px] flex flex-col">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                        <h2 class="font-black text-xl text-slate-800">Recent Class Sessions</h2>
+                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg uppercase tracking-widest">Click to manage</span>
+                    </div>
                     <div id="recentSessionsLog" class="flex-1 overflow-y-auto space-y-3 pr-2">
-                        <p class="text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Fetching real-time logs...</p>
+                        <p class="text-slate-500 text-sm font-medium"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Fetching logs...</p>
                     </div>
                 </div>
             </section>
 
-            <section id="view-classes" class="tab-content">
-                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">My Classes</h1>
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                    <div id="myClassesContainer" class="grid grid-cols-2 gap-6"></div>
-                </div>
+            <section id="view-classes" class="tab-content hidden">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-8">My Classes</h1>
+                <div id="myClassesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
             </section>
 
-            <section id="view-students" class="tab-content" style="display: none;">
-                <div class="flex justify-between items-center mb-8 animate-fade-in-up">
-                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">My Students</h1>
-                </div>
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                    <div id="myStudentsListContainer" class="w-full">
-                        <p class="text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading students data...</p>
+            <section id="view-students" class="tab-content hidden">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-6">My Students</h1>
+                <div id="studentFiltersContainer" class="flex flex-wrap gap-2 mb-6"></div>
+                
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full overflow-hidden">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left whitespace-nowrap">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Student Details</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Section</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Attendance</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myStudentsListContainer" class="divide-y divide-slate-100 bg-white">
+                                <tr><td colspan="4" class="p-8 text-slate-500 text-sm font-medium"><i class="fa-solid fa-spinner fa-spin mr-2 text-brand"></i> Loading students data...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <section id="view-assignments" class="tab-content">
-                <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-8 animate-fade-in-up">Assignments & Submissions</h1>
-                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 animate-fade-in-up delay-100">
-                    <div id="postedAssignmentsContainer" class="space-y-4"></div>
-                </div>
+            <section id="view-assignments" class="tab-content hidden">
+                <h1 class="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight mb-8">Assignments & Submissions</h1>
+                <div id="postedAssignmentsContainer" class="space-y-4"></div>
             </section>
 
         </div>
     </main>
+</div>
 
-    <div id="sessionModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-slate-100 transform transition-all relative">
-            <h2 class="text-2xl font-black text-slate-800 mb-2">Live Attendance</h2>
-            <p class="text-sm text-slate-500 mb-6 font-medium">Select class to open a 5-min window.</p>
-            <select id="selMyClass" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl mb-8 outline-none focus:ring-2 focus:ring-brand"></select>
-            <div class="flex gap-4 justify-end">
-                <button id="btnCloseSessionModal" class="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition">Cancel</button>
-                <button id="btnStartSession" class="px-6 py-2.5 bg-brand text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 transition">Show QR Code</button>
+<div id="globalRemarkModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200">
+                <div class="bg-slate-800 p-5 text-white flex justify-between items-center">
+                    <h2 class="text-lg font-black tracking-wide"><i class="fa-solid fa-comment-dots mr-2 text-purple-400"></i> Send Remark</h2>
+                    <button id="btnCloseGlobalRemark" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center transition-all"><i class="fa-solid fa-xmark text-sm"></i></button>
+                </div>
+                <div class="p-6 bg-slate-50">
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Class</label>
+                        <select id="remarkSelClass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold text-slate-700"></select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Student</label>
+                        <select id="remarkSelStudent" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold text-slate-700"><option value="">-- Select --</option></select>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Remark</label>
+                        <textarea id="remarkText" rows="3" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm font-medium" placeholder="Write your remark here..."></textarea>
+                    </div>
+                    <button id="btnSubmitGlobalRemark" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-black py-3.5 rounded-xl shadow-md transition-colors">Send Message</button>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="qrDisplayModal" class="hidden fixed inset-0 modal-backdrop z-[100] flex items-center justify-center">
-        <div class="bg-white p-10 rounded-3xl shadow-2xl flex flex-col items-center text-center transform transition-all relative w-[90vw] max-w-md">
-            <button id="btnCloseQr" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-2xl transition"><i class="fa-solid fa-xmark"></i></button>
-            
-            <h2 class="text-3xl font-black text-slate-800 mb-2">Scan to Mark Present</h2>
-            <p class="text-sm font-bold text-brand mb-6 bg-brand/10 px-4 py-1.5 rounded-full uppercase tracking-widest" id="qrClassDisplay">B.Tech CS - 1A</p>
-            
-            <div id="qrCodeContainer" class="p-4 bg-white border-4 border-slate-100 rounded-2xl shadow-sm mb-6 flex items-center justify-center min-h-[250px] min-w-[250px]">
+<div id="sessionDetailsModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-[#f8fafc] text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-slate-200 flex flex-col max-h-[85vh]">
+                <div class="p-6 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800" id="detailModalTitle">Session Details</h2>
+                        <p class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1" id="detailModalSubtitle">Date & Time</p>
+                    </div>
+                    <button id="btnCloseSessionDetails" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-            
-            <div class="w-full flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-stopwatch text-2xl text-emerald-500 animate-pulse"></i>
-                    <div class="text-left">
-                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Time Remaining</p>
-                        <p class="text-xl font-black text-slate-800" id="qrTimerDisplay">05:00</p>
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                            <h3 class="text-sm font-black text-emerald-500 uppercase tracking-widest"><i class="fa-solid fa-user-check mr-2"></i> Present</h3>
+                            <span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-lg text-xs" id="presentCount">0</span>
+                        </div>
+                        <div id="presentList" class="space-y-2"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                            <h3 class="text-sm font-black text-red-500 uppercase tracking-widest"><i class="fa-solid fa-user-xmark mr-2"></i> Absent</h3>
+                            <span class="bg-red-50 text-red-600 font-bold px-3 py-1 rounded-lg text-xs" id="absentCount">0</span>
+                        </div>
+                        <div id="absentList" class="space-y-2"></div>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Security</p>
-                    <p class="text-xs font-bold text-emerald-600"><i class="fa-solid fa-shield-halved"></i> Dynamic Token</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sessionModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-white p-8 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-sm border border-slate-200">
+                <h2 class="text-xl font-black text-slate-800 mb-1">Live Attendance</h2>
+                <p class="text-xs text-slate-500 mb-6">Select class to open a secure window.</p>
+                <select id="selMyClass" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-6 outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-700"></select>
+                <div class="flex gap-3 justify-end">
+                    <button id="btnCloseSessionModal" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition">Cancel</button>
+                    <button id="btnStartSession" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md transition-colors">Start Live</button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="assignModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-slate-100 transform transition-all">
-            <h2 class="text-2xl font-black text-slate-800 mb-6">Create Assignment</h2>
-            <select id="assignSelClass" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand"></select>
-            <input type="text" id="assignTitle" placeholder="Task Title" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand">
-            <input type="date" id="assignDue" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mb-8 outline-none focus:ring-2 focus:ring-brand">
-            <div class="flex gap-4 justify-end">
-                <button id="btnCloseAssign" class="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition">Cancel</button>
-                <button id="btnSaveAssign" class="px-6 py-2.5 bg-brand text-white rounded-xl font-bold shadow-md hover:bg-emerald-600 transition">Post Task</button>
+<div id="qrDisplayModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-md transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-white p-8 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-sm border border-slate-200 flex flex-col items-center">
+                <button id="btnCloseQr" class="absolute top-4 right-4 w-8 h-8 bg-slate-50 hover:bg-red-50 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                <h2 class="text-2xl font-black text-slate-800 mb-1 mt-2">Scan QR</h2>
+                <p class="text-[10px] font-black text-brand mb-6 bg-brand/10 px-3 py-1.5 rounded-full uppercase tracking-widest" id="qrClassDisplay">Details</p>
+                <div id="qrCodeContainer" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 flex items-center justify-center min-h-[220px] min-w-[220px]"></div>
+                <div class="w-full flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-stopwatch text-xl text-emerald-500 animate-pulse"></i>
+                        <div class="text-left">
+                            <p class="text-[9px] uppercase font-black text-slate-400">Time Left</p>
+                            <p class="text-lg font-black text-slate-800" id="qrTimerDisplay">05:00</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] uppercase font-black text-slate-400">Security</p>
+                        <p class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded mt-0.5 border border-emerald-100"><i class="fa-solid fa-shield-halved"></i> Dynamic</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
+
+<div id="assignModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-white p-8 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200">
+                <h2 class="text-xl font-black text-slate-800 mb-6">Create Assignment</h2>
+                <select id="assignSelClass" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-700"></select>
+                <input type="text" id="assignTitle" placeholder="Task Title" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-800">
+                <input type="date" id="assignDue" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-6 outline-none focus:ring-2 focus:ring-brand text-sm font-bold text-slate-700">
+                <div class="flex gap-3 justify-end">
+                    <button id="btnCloseAssign" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition">Cancel</button>
+                    <button id="btnSaveAssign" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition">Post Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     
-    <div id="submissionsModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl w-[650px] max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 transform transition-all">
-            <h2 class="text-2xl font-black text-slate-800 mb-2">Student Submissions</h2>
-            <p class="text-sm text-brand font-bold mb-6 border-b border-slate-50 pb-4" id="subModalTitle">Task</p>
-            <div id="submissionsList" class="flex-1 overflow-y-auto space-y-4 pr-2"></div>
-            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-                <button id="btnCloseSubmissions" class="px-8 py-3 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-bold transition">Close</button>
+<div id="submissionsModal" class="hidden relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-3xl bg-[#f8fafc] text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl border border-slate-200 flex flex-col max-h-[85vh]">
+                <div class="p-6 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
+                    <div class="text-left">
+                        <h2 class="text-xl font-black text-slate-800 mb-0.5">Submissions</h2>
+                        <p class="text-[10px] text-brand font-bold bg-brand/10 px-2 py-0.5 rounded border border-brand/20 inline-block uppercase tracking-widest" id="subModalTitle">Task</p>
+                    </div>
+                    <button id="btnCloseSubmissions" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="submissionsList" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
             </div>
         </div>
     </div>
-</section>
-
-<script type="module">
-    document.addEventListener("DOMContentLoaded", () => {
-        const navbar = document.querySelector(".custom-navbar");
-        if (navbar) {
-            navbar.style.backgroundColor = "#0b132b";
-            navbar.style.borderBottom = "none";
-            navbar.style.boxShadow = "none";
-            navbar.style.padding = "12px 0";
-            navbar.classList.add("navbar-dark-mode");
-            navbar.classList.remove("navbar-light-mode");
-        }
-
-        const aside = document.querySelector("aside");
-        
-        if (window.innerWidth <= 992 && aside) {
-            const closeMenuBtn = document.createElement("button");
-            closeMenuBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-            closeMenuBtn.className = "absolute top-6 right-6 text-white text-3xl font-black bg-white/10 w-12 h-12 rounded-full flex items-center justify-center hover:bg-white/20 z-50";
-            aside.appendChild(closeMenuBtn);
-            
-            closeMenuBtn.addEventListener("click", () => {
-                if(history.state && history.state.menuOpen) {
-                    history.back(); 
-                } else {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                }
-            });
-        }
-
-        if (window.innerWidth <= 992) {
-            const navRight = document.querySelector(".custom-navbar .nav-right");
-            const originalProfile = document.querySelector("#userAvatarInitials");
-            
-            if (navRight && aside && originalProfile) {
-                navRight.style.position = "relative";
-                navRight.style.zIndex = "10000"; 
-                navRight.innerHTML = ""; 
-                navRight.style.display = "flex";
-                navRight.style.alignItems = "center";
-                navRight.style.gap = "15px";
-                
-                const profileClone = originalProfile.cloneNode(true);
-                profileClone.removeAttribute('id'); 
-                profileClone.style.width = "40px"; 
-                profileClone.style.height = "40px";
-                profileClone.style.fontSize = "18px";
-                profileClone.style.marginBottom = "0";
-                profileClone.style.border = "2px solid rgba(255,255,255,0.8)"; 
-                profileClone.style.cursor = "pointer";
-                
-                profileClone.addEventListener("click", () => window.location.href = '/profile');
-                originalProfile.parentElement.addEventListener("click", () => window.location.href = '/profile');
-                navRight.appendChild(profileClone);
-                
-                const burgerBtn = document.createElement("button");
-                burgerBtn.innerHTML = '<i class="fa-solid fa-bars text-white text-2xl"></i>';
-                burgerBtn.style.background = "none";
-                burgerBtn.style.border = "none";
-                navRight.appendChild(burgerBtn);
-                
-                burgerBtn.addEventListener("click", () => {
-                    aside.classList.add("menu-open");
-                    document.body.style.overflow = "hidden";
-                    history.pushState({ menuOpen: true }, ""); 
-                });
-            }
-        }
-
-        // Mobile menu auto close
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.innerWidth <= 992 && aside && aside.classList.contains("menu-open")) {
-                    aside.classList.remove("menu-open");
-                    document.body.style.overflow = "auto";
-                }
-            });
-        });
-
-        // 🔥 SMART ROUTING FOR BACK BUTTON
-        history.replaceState({ tab: 'view-dashboard' }, ""); 
-
-        window.addEventListener("popstate", (e) => {
-            const aside = document.querySelector("aside");
-            if (aside && aside.classList.contains("menu-open")) {
-                aside.classList.remove("menu-open");
-                document.body.style.overflow = "auto";
-                return;
-            }
-
-            if (e.state && e.state.tab) {
-                // Read history state and switch tab
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                const targetView = document.getElementById(e.state.tab);
-                if(targetView) targetView.classList.add('active');
-
-                // Update active button color
-                document.querySelectorAll('.nav-btn').forEach(b => {
-                    if(b.getAttribute('data-target') === e.state.tab) {
-                        b.classList.add("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
-                        b.classList.remove("text-slate-400", "hover:bg-darkHover", "hover:text-white");
-                    } else {
-                        b.classList.remove("bg-brand", "text-white", "shadow-[0_4px_15px_rgba(16,185,129,0.4)]");
-                        b.classList.add("text-slate-400", "hover:bg-darkHover", "hover:text-white");
-                    }
-                });
-            } else {
-                // Agar state empty hai, matlab hum Dashboard scope se bahar jaa rahe hain
-                window.location.replace("/");
-            }
-        });
-    });
-</script>
+</div>
 
 <script type="module" src="{{ url_for('static', filename='js/teacher_dashboard.js') }}"></script>
 {% endblock %}

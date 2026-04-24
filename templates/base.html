@@ -24,38 +24,47 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ================= NAVBAR =================
-    const sections = document.querySelectorAll("[id]");
+    // ================= NAVBAR & SCROLL SPY (FIXED) =================
+    const sections = document.querySelectorAll("section[id]");
     const navbar = document.querySelector(".custom-navbar");
     const navLinks = document.querySelectorAll(".nav-link");
 
     if (sections.length && navbar && navLinks.length) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
+        window.addEventListener("scroll", () => {
+            let current = "";
+            let currentSectionIsLight = false;
 
-                    const id = entry.target.id;
-
-                    navLinks.forEach(link => {
-                        link.classList.remove("active");
-
-                        if (link.getAttribute("href") === "#" + id) {
-                            link.classList.add("active");
-                        }
-                    });
-
-                    if (entry.target.classList.contains("light")) {
-                        navbar.classList.add("navbar-light-mode");
-                        navbar.classList.remove("navbar-dark-mode");
-                    } else {
-                        navbar.classList.add("navbar-dark-mode");
-                        navbar.classList.remove("navbar-light-mode");
-                    }
+            // 1. Detect current section on screen
+            sections.forEach((section) => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - sectionHeight / 3)) {
+                    current = section.getAttribute("id");
+                    currentSectionIsLight = section.classList.contains("light");
                 }
             });
-        }, { threshold: 0.3 });
 
-        sections.forEach(section => observer.observe(section));
+            // 2. Update Red Dot (Active Class)
+            navLinks.forEach((link) => {
+                link.classList.remove("active");
+                const href = link.getAttribute("href");
+                if (href && href.includes(`#${current}`)) {
+                    link.classList.add("active");
+                }
+            });
+
+            // 3. Update Navbar Theme (Dark/Light)
+            if (currentSectionIsLight) {
+                navbar.classList.add("navbar-light-mode");
+                navbar.classList.remove("navbar-dark-mode");
+            } else {
+                navbar.classList.add("navbar-dark-mode");
+                navbar.classList.remove("navbar-light-mode");
+            }
+        });
+
+        // Trigger scroll event once on load to set initial state
+        window.dispatchEvent(new Event("scroll"));
     }
 
     // ================= PANEL SWITCH =================

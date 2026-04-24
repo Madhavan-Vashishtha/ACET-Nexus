@@ -1,7 +1,10 @@
-import { auth, db, storage } from "./firebase.js"; 
+import { auth, db } from "./firebase.js"; 
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, query, where, getDocs, addDoc, doc, getDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { collection, query, where, getDocs, addDoc, doc, getDoc, serverTimestamp, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// 🔥 FIX: Direct Storage Import to prevent blank screen crash
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const storage = getStorage();
 
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -71,26 +74,30 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const loggedInDoc = await getDoc(doc(db, "users", user.uid));
-        const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
+        try {
+            const loggedInDoc = await getDoc(doc(db, "users", user.uid));
+            const loggedInRole = loggedInDoc.exists() ? loggedInDoc.data().role : null;
 
-        if (viewAsId) {
-            if (loggedInRole === "admin" || loggedInRole === "teacher") {
-                isViewOnly = true;
-                currentStudentId = viewAsId;
-                setupImpersonationUI();
-                await safeLoadStudentData(viewAsId);
+            if (viewAsId) {
+                if (loggedInRole === "admin" || loggedInRole === "teacher") {
+                    isViewOnly = true;
+                    currentStudentId = viewAsId;
+                    setupImpersonationUI();
+                    await safeLoadStudentData(viewAsId);
+                } else {
+                    alert("Unauthorized Access!");
+                    window.location.replace("/login");
+                }
             } else {
-                alert("Unauthorized Access!");
-                window.location.replace("/login");
+                if (loggedInRole === "student") {
+                    currentStudentId = user.uid;
+                    await safeLoadStudentData(user.uid);
+                } else {
+                    window.location.replace("/login");
+                }
             }
-        } else {
-            if (loggedInRole === "student") {
-                currentStudentId = user.uid;
-                await safeLoadStudentData(user.uid);
-            } else {
-                window.location.replace("/login");
-            }
+        } catch (authErr) {
+            console.error("Auth Load Error:", authErr);
         }
     });
 
@@ -171,6 +178,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 } catch(e) { 
                     console.error("Subjects Error:", e); 
                 }
+            } else {
+                console.error("User Document does not exist in Firestore.");
             }
         } catch (error) {
             console.error("Critical User Load Error:", error);
@@ -268,122 +277,127 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Fetch All sessions WITHOUT orderBy to avoid Firebase Composite Index error
-        const sessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection));
-        const sessSnap = await getDocs(sessQ);
-        
-        let allSessions = [];
-        sessSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.createdAt) {
-                allSessions.push({ id: doc.id, ...data, time: data.createdAt.toDate().getTime() });
-            }
-        });
-        
-        // Sort Ascending Locally for the graph trend to go left-to-right properly
-        allSessions.sort((a,b) => a.time - b.time);
-        const totalHeld = allSessions.length;
-
-        // Fetch My Attended Classes
-        const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId));
-        const marksSnap = await getDocs(marksQ);
-        
-        const attendedSet = new Set();
-        let allMarks = [];
-        
-        marksSnap.forEach(doc => {
-            const data = doc.data();
-            attendedSet.add(data.sessionId);
-            if (data.timestamp) {
-                allMarks.push({ id: doc.id, ...data, time: data.timestamp.toDate().getTime() });
-            }
-        });
-
-        const classesAttended = attendedSet.size;
-        let percentage = totalHeld > 0 ? Math.round((classesAttended / totalHeld) * 100) : 0;
-        let missedClasses = totalHeld > classesAttended ? totalHeld - classesAttended : 0;
-
-        if (document.getElementById("statTotalSessions")) {
-            document.getElementById("statTotalSessions").innerText = classesAttended; // Lectures Attended
-        }
-        if (document.getElementById("statAttPercent")) {
-            document.getElementById("statAttPercent").innerText = `${percentage}%`;
-        }
-        if (document.getElementById("graphPercentage")) {
-            document.getElementById("graphPercentage").innerText = `${percentage}%`;
-        }
-        
-        drawChart(classesAttended, missedClasses);
-
-        // 🔥 CALCULATE REAL CUMULATIVE GRAPH TREND 🔥
-        let labels = [];
-        let trendData = [];
-        let runTotal = 0;
-        let runAttended = 0;
-
-        if (allSessions.length === 0) {
-            drawLineChart(['No Data'], [0]); 
-        } else {
-            allSessions.forEach(sessData => {
-                runTotal++;
-                
-                if (attendedSet.has(sessData.id)) {
-                    runAttended++;
+        try {
+            // Fetch All sessions WITHOUT orderBy to avoid Firebase Composite Index error
+            const sessQ = query(collection(db, "attendance_sessions"), where("sectionId", "==", currentStudentSection));
+            const sessSnap = await getDocs(sessQ);
+            
+            let allSessions = [];
+            sessSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt) {
+                    allSessions.push({ id: doc.id, ...data, time: data.createdAt.toDate().getTime() });
                 }
-                
-                let pct = Math.round((runAttended / runTotal) * 100);
-                let d = new Date(sessData.time);
-                
-                labels.push(`${d.getDate()}/${d.getMonth()+1}`);
-                trendData.push(pct);
+            });
+            
+            // Sort Ascending Locally for the graph trend to go left-to-right properly
+            allSessions.sort((a,b) => a.time - b.time);
+            const totalHeld = allSessions.length;
+
+            // Fetch My Attended Classes
+            const marksQ = query(collection(db, "attendance_marks"), where("studentId", "==", currentStudentId));
+            const marksSnap = await getDocs(marksQ);
+            
+            const attendedSet = new Set();
+            let allMarks = [];
+            
+            marksSnap.forEach(doc => {
+                const data = doc.data();
+                attendedSet.add(data.sessionId);
+                if (data.timestamp) {
+                    allMarks.push({ id: doc.id, ...data, time: data.timestamp.toDate().getTime() });
+                }
             });
 
-            // Limit chart to last 10 data points
-            if (labels.length > 10) {
-                labels = labels.slice(-10);
-                trendData = trendData.slice(-10);
-            }
-            
-            drawLineChart(labels, trendData);
-        }
+            const classesAttended = attendedSet.size;
+            let percentage = totalHeld > 0 ? Math.round((classesAttended / totalHeld) * 100) : 0;
+            let missedClasses = totalHeld > classesAttended ? totalHeld - classesAttended : 0;
 
-        // Render Recent Logs (Sorted Descending locally)
-        const container1 = document.getElementById("recentActivityContainer");
-        const container2 = document.getElementById("myHistoryContainer");
-        
-        const renderLogs = (container) => {
-            if (!container) {
-                return;
+            if (document.getElementById("statTotalSessions")) {
+                document.getElementById("statTotalSessions").innerText = classesAttended; // Lectures Attended
+            }
+            if (document.getElementById("statAttPercent")) {
+                document.getElementById("statAttPercent").innerText = `${percentage}%`;
+            }
+            if (document.getElementById("graphPercentage")) {
+                document.getElementById("graphPercentage").innerText = `${percentage}%`;
             }
             
-            container.innerHTML = "";
-            
-            if (allMarks.length === 0) {
-                container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
+            drawChart(classesAttended, missedClasses);
+
+            // 🔥 CALCULATE REAL CUMULATIVE GRAPH TREND 🔥
+            let labels = [];
+            let trendData = [];
+            let runTotal = 0;
+            let runAttended = 0;
+
+            if (allSessions.length === 0) {
+                drawLineChart(['No Data'], [0]); 
             } else {
-                allMarks.sort((a,b) => b.time - a.time); // Newest first
-                const topMarks = allMarks.slice(0, 10);
-                
-                topMarks.forEach(data => {
-                    const dateStr = new Date(data.time).toLocaleString();
-                    container.innerHTML += `
-                        <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm hover:shadow-md transition">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
-                                <div>
-                                    <p class="font-bold text-slate-800">${data.subject || 'Lecture Session'}</p>
-                                    <p class="text-xs text-slate-500">${dateStr}</p>
-                                </div>
-                            </div>
-                            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">PRESENT</span>
-                        </div>
-                    `;
+                allSessions.forEach(sessData => {
+                    runTotal++;
+                    
+                    if (attendedSet.has(sessData.id)) {
+                        runAttended++;
+                    }
+                    
+                    let pct = Math.round((runAttended / runTotal) * 100);
+                    let d = new Date(sessData.time);
+                    
+                    labels.push(`${d.getDate()}/${d.getMonth()+1}`);
+                    trendData.push(pct);
                 });
-            }
-        };
 
-        renderLogs(container1);
-        renderLogs(container2);
+                // Limit chart to last 10 data points
+                if (labels.length > 10) {
+                    labels = labels.slice(-10);
+                    trendData = trendData.slice(-10);
+                }
+                
+                drawLineChart(labels, trendData);
+            }
+
+            // Render Recent Logs (Sorted Descending locally)
+            const container1 = document.getElementById("recentActivityContainer");
+            const container2 = document.getElementById("myHistoryContainer");
+            
+            const renderLogs = (container) => {
+                if (!container) {
+                    return;
+                }
+                
+                container.innerHTML = "";
+                
+                if (allMarks.length === 0) {
+                    container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No attendance history found.</p>";
+                } else {
+                    allMarks.sort((a,b) => b.time - a.time); // Newest first
+                    const topMarks = allMarks.slice(0, 10);
+                    
+                    topMarks.forEach(data => {
+                        const dateStr = new Date(data.time).toLocaleString();
+                        container.innerHTML += `
+                            <div class="flex justify-between items-center p-4 border border-slate-100 bg-white rounded-xl mb-3 shadow-sm hover:shadow-md transition">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check"></i></div>
+                                    <div>
+                                        <p class="font-bold text-slate-800">${data.subject || 'Lecture Session'}</p>
+                                        <p class="text-xs text-slate-500">${dateStr}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">PRESENT</span>
+                            </div>
+                        `;
+                    });
+                }
+            };
+
+            renderLogs(container1);
+            renderLogs(container2);
+
+        } catch (error) {
+            console.error("Error loading history & graphs:", error);
+        }
     }
 
     function drawChart(attended, missed) {
@@ -491,105 +505,114 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const q = query(collection(db, "assignments"), where("sectionId", "==", currentStudentSection));
-        const snapshot = await getDocs(q);
-        
-        container.innerHTML = "";
-        let activeAssignmentsCount = 0;
-
-        if (snapshot.empty) {
-            if (document.getElementById("statAssignments")) {
-                document.getElementById("statAssignments").innerText = "0";
-            }
-            container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
-            return;
-        }
-
-        for (const docSnap of snapshot.docs) {
-            const data = docSnap.data();
-            const formattedDate = new Date(data.dueDate).toLocaleDateString();
-
-            const subQ = query(collection(db, "assignment_submissions"), where("assignmentId", "==", docSnap.id), where("studentId", "==", currentStudentId));
-            const subSnap = await getDocs(subQ);
+        try {
+            const q = query(collection(db, "assignments"), where("sectionId", "==", currentStudentSection));
+            const snapshot = await getDocs(q);
             
-            const isSubmitted = !subSnap.empty;
-            
-            let buttonHTML = "";
-            let statusFeedback = "";
+            container.innerHTML = "";
+            let activeAssignmentsCount = 0;
 
-            if (!isSubmitted) {
-                activeAssignmentsCount++;
-                
-                if (isViewOnly) {
-                    buttonHTML = `<span class="text-xs font-bold text-slate-400">Not Submitted</span>`;
-                } else {
-                    buttonHTML = `<button class="btn-submit-task bg-brand text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition" data-id="${docSnap.id}" data-title="${data.title}">Submit Task</button>`;
+            if (snapshot.empty) {
+                if (document.getElementById("statAssignments")) {
+                    document.getElementById("statAssignments").innerText = "0";
                 }
-            } else {
-                // If submitted, check the status from teacher
-                const subData = subSnap.docs[0].data();
-                const currentStatus = subData.status || 'pending_review';
-                
-                if (currentStatus === 'approved') {
-                    buttonHTML = `<button disabled class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-emerald-200"><i class="fa-solid fa-check-double mr-1"></i> Approved</button>`;
-                    statusFeedback = `<p class="text-[11px] text-emerald-600 font-bold mt-3 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100"><i class="fa-solid fa-circle-check mr-1"></i> Teacher: ${subData.teacherRemark || 'Great work!'}</p>`;
-                } else if (currentStatus === 'rejected') {
-                    buttonHTML = `<button disabled class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-red-200"><i class="fa-solid fa-xmark mr-1"></i> Rejected</button>`;
-                    statusFeedback = `<p class="text-[11px] text-red-600 font-bold mt-3 bg-red-50 px-3 py-2 rounded-lg border border-red-100"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Reason: ${subData.teacherRemark || 'Please review and resubmit'}</p>`;
-                } else {
-                    buttonHTML = `<button disabled class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-yellow-200"><i class="fa-solid fa-clock mr-1"></i> Under Review</button>`;
-                }
+                container.innerHTML = "<p class='text-slate-500 text-sm col-span-2'>No pending assignments right now.</p>";
+                return;
             }
 
-            container.innerHTML += `
-                <div class="p-5 ${isSubmitted ? 'bg-slate-50 border-slate-200' : 'bg-white border-blue-100'} rounded-2xl border mb-2 shadow-sm flex flex-col justify-between transition hover:shadow-md">
-                    <div>
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="${isSubmitted ? 'bg-slate-200 text-slate-500' : 'bg-blue-100 text-brand'} w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-file-pen"></i></div>
-                            <p class="text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg">DUE: ${formattedDate}</p>
+            for (const docSnap of snapshot.docs) {
+                const data = docSnap.data();
+                const formattedDate = new Date(data.dueDate).toLocaleDateString();
+
+                const subQ = query(collection(db, "assignment_submissions"), where("assignmentId", "==", docSnap.id), where("studentId", "==", currentStudentId));
+                const subSnap = await getDocs(subQ);
+                
+                const isSubmitted = !subSnap.empty;
+                
+                let buttonHTML = "";
+                let statusFeedback = "";
+
+                if (!isSubmitted) {
+                    activeAssignmentsCount++;
+                    
+                    if (isViewOnly) {
+                        buttonHTML = `<span class="text-xs font-bold text-slate-400">Not Submitted</span>`;
+                    } else {
+                        buttonHTML = `<button class="btn-submit-task bg-brand text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition" data-id="${docSnap.id}" data-title="${data.title}">Submit Task</button>`;
+                    }
+                } else {
+                    const subData = subSnap.docs[0].data();
+                    const currentStatus = subData.status || 'pending_review';
+                    
+                    if (currentStatus === 'approved') {
+                        buttonHTML = `<button disabled class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-emerald-200"><i class="fa-solid fa-check-double mr-1"></i> Approved</button>`;
+                        statusFeedback = `<p class="text-[11px] text-emerald-600 font-bold mt-3 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100"><i class="fa-solid fa-circle-check mr-1"></i> Teacher: ${subData.teacherRemark || 'Great work!'}</p>`;
+                    } else if (currentStatus === 'rejected') {
+                        buttonHTML = `<button disabled class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-red-200"><i class="fa-solid fa-xmark mr-1"></i> Rejected</button>`;
+                        statusFeedback = `<p class="text-[11px] text-red-600 font-bold mt-3 bg-red-50 px-3 py-2 rounded-lg border border-red-100"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Reason: ${subData.teacherRemark || 'Please review and resubmit'}</p>`;
+                    } else {
+                        buttonHTML = `<button disabled class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-xl text-xs font-bold cursor-not-allowed border border-yellow-200"><i class="fa-solid fa-clock mr-1"></i> Under Review</button>`;
+                    }
+                }
+
+                container.innerHTML += `
+                    <div class="p-5 ${isSubmitted ? 'bg-slate-50 border-slate-200' : 'bg-white border-blue-100'} rounded-2xl border mb-2 shadow-sm flex flex-col justify-between transition hover:shadow-md">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="${isSubmitted ? 'bg-slate-200 text-slate-500' : 'bg-blue-100 text-brand'} w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-file-pen"></i></div>
+                                <p class="text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg">DUE: ${formattedDate}</p>
+                            </div>
+                            <p class="font-bold text-base ${isSubmitted ? 'text-slate-500 line-through' : 'text-slate-800'}">${data.title}</p>
+                            <p class="text-xs text-slate-500 font-bold uppercase mt-1">Subject: <span class="text-brand">${data.subjectName}</span></p>
+                            ${statusFeedback}
                         </div>
-                        <p class="font-bold text-base ${isSubmitted ? 'text-slate-500 line-through' : 'text-slate-800'}">${data.title}</p>
-                        <p class="text-xs text-slate-500 font-bold uppercase mt-1">Subject: <span class="text-brand">${data.subjectName}</span></p>
-                        ${statusFeedback}
+                        <div class="flex justify-end mt-4 pt-4 border-t border-slate-100">
+                            ${buttonHTML}
+                        </div>
                     </div>
-                    <div class="flex justify-end mt-4 pt-4 border-t border-slate-100">
-                        ${buttonHTML}
-                    </div>
-                </div>
-            `;
-        }
-        
-        if (document.getElementById("statAssignments")) {
-            document.getElementById("statAssignments").innerText = activeAssignmentsCount;
+                `;
+            }
+            
+            if (document.getElementById("statAssignments")) {
+                document.getElementById("statAssignments").innerText = activeAssignmentsCount;
+            }
+        } catch (error) {
+            console.error("Error loading assignments:", error);
         }
     }
 
-    // ================= 6. FETCH REMARKS =================
+    // ================= 6. FETCH REMARKS (WITH TEACHER NAME) =================
     async function loadMyRemarks() {
         const container = document.getElementById("myRemarksContainer");
         if (!container) {
             return;
         }
 
-        const snapshot = await getDocs(query(collection(db, "remarks"), where("studentId", "==", currentStudentId)));
-        container.innerHTML = "";
+        try {
+            const snapshot = await getDocs(query(collection(db, "remarks"), where("studentId", "==", currentStudentId)));
+            container.innerHTML = "";
 
-        if (snapshot.empty) {
-            container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No feedback received yet.</p>";
-            return;
-        }
+            if (snapshot.empty) {
+                container.innerHTML = "<p class='text-slate-500 text-sm p-4'>No feedback received yet.</p>";
+                return;
+            }
 
-        for (const docSnap of snapshot.docs) {
-            const data = docSnap.data();
-            const teacherDoc = await getDoc(doc(db, "users", data.teacherId));
-            const teacherName = teacherDoc.exists() ? teacherDoc.data().name : "A Teacher";
+            for (const docSnap of snapshot.docs) {
+                const data = docSnap.data();
+                
+                // Fetch Teacher Name
+                const teacherDoc = await getDoc(doc(db, "users", data.teacherId));
+                const teacherName = teacherDoc.exists() ? teacherDoc.data().name : "A Teacher";
 
-            container.innerHTML += `
-                <div class="p-4 border-l-4 border-brand bg-blue-50/50 rounded-r-xl mb-3 shadow-sm">
-                    <p class="text-sm font-bold text-slate-800">"${data.remark}"</p>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase mt-2">From: Prof. ${teacherName}</p>
-                </div>
-            `;
+                container.innerHTML += `
+                    <div class="p-4 border-l-4 border-brand bg-blue-50/50 rounded-r-xl mb-3 shadow-sm">
+                        <p class="text-sm font-bold text-slate-800">"${data.remark}"</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mt-2">From: Prof. ${teacherName}</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error("Error loading remarks:", error);
         }
     }
 
@@ -713,6 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     sectionId: currentStudentSection, 
                     answer: answerText, 
                     fileUrl: fileUrl, 
+                    status: "pending_review",
                     submittedAt: serverTimestamp()
                 });
 
