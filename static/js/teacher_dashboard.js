@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentTeacherId = null; let myAllocatedClasses = []; let isViewOnly = false;
     const urlParams = new URLSearchParams(window.location.search); const viewAsId = urlParams.get('viewAs');
 
-    // ================= MOBILE MENU LOGIC =================
+    // ================= MOBILE MENU LOGIC (Z-INDEX BUG FIX) =================
     const mobileMenuBtn = document.getElementById("mobileMenuBtn");
     const sidebar = document.getElementById("mainSidebar");
     const mobileOverlay = document.getElementById("mobileOverlay");
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mobileOverlay.addEventListener("click", toggleMobileMenu);
     }
 
-    // ================= TAB SWITCHING =================
+    // ================= TAB SWITCHING & SCROLL RESET =================
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const targetId = btn.getAttribute("data-target");
@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(document.getElementById("welcomeText")) document.getElementById("welcomeText").innerText = name;
                 if(document.getElementById("currentDateDisplay")) document.getElementById("currentDateDisplay").innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 
-                // UPDATE BOTH DESKTOP AND MOBILE AVATARS
+                // MOBILE AVATAR FIX
                 if(document.getElementById("userAvatarInitials")) document.getElementById("userAvatarInitials").innerText = name[0].toUpperCase();
                 if(document.getElementById("mobileAvatarInitials")) document.getElementById("mobileAvatarInitials").innerText = name[0].toUpperCase();
 
@@ -106,10 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if(container) {
                 container.innerHTML += `
-                    <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition-all btn-jump-students" data-sec="${secStr}">
+                    <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 cursor-pointer transition-colors hover:bg-slate-50 active:bg-slate-100 btn-jump-students" data-sec="${secStr}">
                         <div class="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
-                            <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg lg:text-xl"><i class="fa-solid fa-chalkboard"></i></div>
-                            <span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-lg border border-emerald-100 text-[10px] uppercase tracking-widest">Sec ${secStr}</span>
+                            <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg lg:text-xl shrink-0"><i class="fa-solid fa-chalkboard"></i></div>
+                            <span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-lg border border-emerald-100 text-[10px] uppercase tracking-widest shrink-0">Sec ${secStr}</span>
                         </div>
                         <h3 class="font-black text-slate-800 text-base lg:text-lg mb-1 truncate">${data.subjectName}</h3>
                         <p class="text-[10px] lg:text-[11px] text-slate-400 font-bold"><i class="fa-solid fa-users mr-1 text-slate-300"></i> ${totalStudents} Enrolled</p>
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let pCol = pct >= 75 ? "bg-emerald-500" : (pct >= 50 ? "bg-orange-500" : "bg-red-500");
 
             container.innerHTML += `
-                <div class="session-log-item cursor-pointer p-4 bg-white border border-slate-100 hover:border-blue-200 rounded-xl flex items-center shadow-sm hover:shadow transition-all mb-3" data-session="${data.id}" data-sec="${data.sectionId}" data-subj="${data.subject}" data-time="${data.time}">
+                <div class="session-log-item cursor-pointer p-4 bg-white border border-slate-100 rounded-xl flex items-center shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 mb-3" data-session="${data.id}" data-sec="${data.sectionId}" data-subj="${data.subject}" data-time="${data.time}">
                     <div class="w-[50%] sm:w-[40%] pr-2">
                         <p class="font-black text-slate-800 text-[11px] sm:text-sm truncate">${data.subject} <span class="bg-slate-100 text-slate-500 font-bold text-[8px] sm:text-[9px] px-2 py-0.5 rounded ml-1 border border-slate-200">SEC ${data.sectionId}</span></p>
                         <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1"><i class="fa-solid fa-clock mr-1"></i> ${dateStr}</p>
@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
         students.forEach(s => {
             let col = s.pct >= 75 ? "text-emerald-600 bg-emerald-50 border-emerald-100" : (s.pct >= 50 ? "text-orange-600 bg-orange-50 border-orange-100" : "text-red-600 bg-red-50 border-red-100");
             html += `
-                <tr class="student-row hover:bg-slate-50/50 transition-colors" data-sec="${s.section?.toUpperCase()}">
+                <tr class="student-row hover:bg-slate-50 transition-colors" data-sec="${s.section?.toUpperCase()}">
                     <td class="px-4 lg:px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user"></i></div>
@@ -200,8 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td class="px-4 lg:px-6 py-4"><span class="px-2 lg:px-3 py-1 rounded-md text-[10px] lg:text-xs font-black border ${col}">${s.pct}%</span></td>
                     <td class="px-4 lg:px-6 py-4 text-right">
                         <div class="flex justify-end gap-1.5 lg:gap-2">
-                            <button class="bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition shadow-sm active:scale-95" onclick="window.open('/student-dashboard?viewAs=${s.id}', '_blank')"><i class="fa-solid fa-eye lg:mr-1"></i> <span class="hidden lg:inline">View</span></button>
-                            <button class="btn-quick-remark bg-white hover:bg-purple-50 text-purple-600 border border-slate-200 hover:border-purple-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition shadow-sm active:scale-95" data-sid="${s.id}" data-sname="${s.name}"><i class="fa-solid fa-comment-dots lg:mr-1"></i> <span class="hidden lg:inline">Remark</span></button>
+                            <button class="bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition-colors shadow-sm" onclick="window.open('/student-dashboard?viewAs=${s.id}', '_blank')"><i class="fa-solid fa-eye lg:mr-1"></i> <span class="hidden lg:inline">View</span></button>
+                            <button class="btn-quick-remark bg-white hover:bg-purple-50 text-purple-600 border border-slate-200 hover:border-purple-200 px-2 lg:px-3 py-1.5 rounded-lg text-[9px] lg:text-[10px] font-bold transition-colors shadow-sm" data-sid="${s.id}" data-sname="${s.name}"><i class="fa-solid fa-comment-dots lg:mr-1"></i> <span class="hidden lg:inline">Remark</span></button>
                         </div>
                     </td>
                 </tr>`;
@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <p class="font-black text-sm lg:text-base text-slate-800 mb-1 truncate">${dt.title}</p>
                         <p class="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest"><span class="text-brand mr-2">${dt.sectionId}</span> Due: <span class="text-red-400">${formattedDate}</span></p>
                     </div>
-                    <button class="btn-view-subs bg-slate-50 text-brand border border-slate-200 hover:bg-brand hover:text-white px-3 lg:px-4 py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm shrink-0 active:scale-95" data-id="${d.id}" data-title="${dt.title}" data-sec="${dt.sectionId}">View</button>
+                    <button class="btn-view-subs bg-slate-50 text-brand border border-slate-200 hover:bg-brand hover:text-white px-3 lg:px-4 py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm shrink-0" data-id="${d.id}" data-title="${dt.title}" data-sec="${dt.sectionId}">View</button>
                 </div>`;
         });
     }
@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelector(`.session-log-item[data-session="${b.getAttribute("data-sess")}"]`)?.click();
         }
 
-        // --- SUBMISSIONS MODAL (MOBILE FIX - VERTICAL STACK FOR ACTIONS) ---
+        // --- SUBMISSIONS MODAL (ACCORDION & RESPONSIVE FIX) ---
         if (e.target.closest('.btn-view-subs')) {
             e.preventDefault(); const btn = e.target.closest('.btn-view-subs');
             document.getElementById("subModalTitle").innerText = btn.getAttribute("data-title");
@@ -315,20 +315,20 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <p class="text-sm font-bold text-slate-800 truncate pr-2"><i class="fa-solid fa-file-check text-blue-500 mr-2"></i> ${st.name}</p> 
                                 <div class="flex items-center gap-2 shrink-0">
                                     <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border ${stat==='approved'?'bg-emerald-50 text-emerald-600 border-emerald-200':(stat==='rejected'?'bg-red-50 text-red-600 border-red-200':'bg-amber-50 text-amber-600 border-amber-200')}">${stat}</span>
-                                    <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                                    <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
                                 </div>
                             </div>
                             <div id="acc-${sub.id}" class="hidden p-4 bg-white">
                                 <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 mb-3 text-xs text-slate-600 break-all">
                                     ${sub.answer||'<i class="text-slate-400">No text attached.</i>'}
                                 </div>
-                                ${sub.fileUrl?`<a href="${sub.fileUrl}" target="_blank" class="text-[10px] uppercase font-bold tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2.5 rounded-lg border border-blue-100 inline-block mb-3 transition-colors max-w-full truncate"><i class="fa-solid fa-download mr-1"></i> Download Attachment</a>`:''}
+                                ${sub.fileUrl?`<a href="${sub.fileUrl}" target="_blank" class="text-[10px] uppercase font-bold tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2.5 rounded-lg border border-blue-100 inline-flex items-center mb-3 transition-colors max-w-full truncate"><i class="fa-solid fa-download mr-2 shrink-0"></i> <span class="truncate">Download Attachment</span></a>`:''}
                                 ${stat==='pending'&&!isViewOnly?`
-                                    <div class="flex flex-col gap-2 mt-2 w-full">
-                                        <input type="text" id="rmk-${sub.id}" class="w-full text-xs border border-slate-200 p-3 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-brand" placeholder="Add remark (required for rejection)...">
-                                        <div class="flex gap-2 w-full">
-                                            <button class="btn-approve-sub flex-1 bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md hover:bg-emerald-600 transition active:scale-95" data-id="${sub.id}">Approve</button>
-                                            <button class="btn-reject-sub flex-1 bg-red-500 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-600 transition active:scale-95" data-id="${sub.id}">Reject</button>
+                                    <div class="flex flex-col sm:flex-row gap-2 mt-1 w-full">
+                                        <input type="text" id="rmk-${sub.id}" class="w-full sm:flex-1 text-xs border border-slate-200 p-3 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-brand" placeholder="Add remark (required for rejection)...">
+                                        <div class="flex gap-2 w-full sm:w-auto">
+                                            <button class="btn-approve-sub flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md transition-colors" data-id="${sub.id}">Approve</button>
+                                            <button class="btn-reject-sub flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md transition-colors" data-id="${sub.id}">Reject</button>
                                         </div>
                                     </div>`:''
                                 }
@@ -337,22 +337,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     html += `
                         <div class="p-4 bg-white border border-slate-100 rounded-xl flex justify-between items-center shadow-sm opacity-60">
-                            <p class="text-sm font-bold text-slate-500"><i class="fa-solid fa-user mr-2 text-slate-300"></i> ${st.name}</p>
-                            <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200">Pending</span>
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user"></i></div>
+                                <p class="text-sm font-bold text-slate-500 truncate">${st.name}</p>
+                            </div>
+                            <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200">Not Submitted</span>
                         </div>`;
                 }
             });
             list.innerHTML = html + `</div>`;
         }
         if (e.target.closest('#btnCloseSubmissions')) { e.target.closest('#submissionsModal').classList.add("hidden"); }
+        
+        // Accordion Toggle
         if (e.target.closest('.btn-toggle-sub')) { 
             e.preventDefault(); 
-            const t = document.getElementById(e.target.closest('.btn-toggle-sub').getAttribute('data-target')); 
-            t.classList.toggle('hidden'); 
+            const btn = e.target.closest('.btn-toggle-sub');
+            const targetId = btn.getAttribute('data-target');
+            const targetDiv = document.getElementById(targetId);
+            const icon = btn.querySelector('.fa-chevron-down');
+            if(targetDiv) {
+                targetDiv.classList.toggle('hidden');
+                if(icon) icon.style.transform = targetDiv.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
         }
         
-        if (e.target.closest('.btn-approve-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-approve-sub'); const sid = b.getAttribute("data-id"); b.innerHTML="Wait..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"approved",teacherRemark:document.getElementById(`rmk-${sid}`)?.value||"Good job!",reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 w-full text-center"><i class="fa-solid fa-check mr-1"></i> Approved</span>`;}
-        if (e.target.closest('.btn-reject-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-reject-sub'); const sid = b.getAttribute("data-id"); const r = document.getElementById(`rmk-${sid}`)?.value; if(!r) { alert("Please add a remark to reject."); return; } b.innerHTML="Wait..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"rejected",teacherRemark:r,reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-red-600 font-bold bg-red-50 px-3 py-2 rounded-lg border border-red-100 w-full text-center"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;}
+        if (e.target.closest('.btn-approve-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-approve-sub'); const sid = b.getAttribute("data-id"); b.innerHTML="..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"approved",teacherRemark:document.getElementById(`rmk-${sid}`)?.value||"Good job!",reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 w-full text-center"><i class="fa-solid fa-check mr-1"></i> Approved</span>`;}
+        if (e.target.closest('.btn-reject-sub') && !isViewOnly) { e.preventDefault(); const b = e.target.closest('.btn-reject-sub'); const sid = b.getAttribute("data-id"); const r = document.getElementById(`rmk-${sid}`)?.value; if(!r) { alert("Please add a remark to reject."); return; } b.innerHTML="..."; b.disabled=true; await updateDoc(doc(db,"assignment_submissions",sid),{status:"rejected",teacherRemark:r,reviewedAt:serverTimestamp()}); b.closest('.flex-col').innerHTML=`<span class="text-[10px] text-red-600 font-bold bg-red-50 px-3 py-2 rounded-lg border border-red-100 w-full text-center"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;}
 
         // GLOBAL REMARK
         if (e.target.closest(".btn-quick-remark") && !isViewOnly) { e.preventDefault(); const b = e.target.closest(".btn-quick-remark"); document.getElementById("remarkSelClass").innerHTML = `<option value="">Direct</option>`; document.getElementById("remarkSelStudent").innerHTML = `<option value="${b.getAttribute("data-sid")}">${b.getAttribute("data-sname")}</option>`; document.getElementById("globalRemarkModal").classList.remove("hidden"); }
